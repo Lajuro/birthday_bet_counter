@@ -10,3 +10,5 @@
 - Caso ocorra algum erro para executar um comando, interrompa e peça para mim se pode seguir, pois pode ser que eu tenha dado decline de propósito.
 - Sempre veja o arquivo ARCHITECTURE.md para entender a arquitetura do projeto
 - Após concluir uma fase do plano de implementação do ARCHITECTURE.md, atualize o arquivo CHANGELOG.md
+
+- Sempre veja se tem uma aplicação rodando na porta 3000, se tiver, interrompa e inicialize a aplicação e exiba um preview
