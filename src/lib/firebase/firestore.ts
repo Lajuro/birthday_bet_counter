@@ -10,7 +10,8 @@ import {
   query, 
   where, 
   serverTimestamp as fbServerTimestamp,
-  Timestamp
+  Timestamp,
+  limit
 } from 'firebase/firestore';
 import { db } from './config';
 import type { BirthGuess, UserProfile, AppSettings } from '@/types';
@@ -312,15 +313,44 @@ export const updateAppSettings = async (settings: Partial<AppSettings>): Promise
 
 // GERENCIAMENTO DE USUÁRIOS
 
-// Obter perfil do usuário
+// Buscar perfil do usuário
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
+    console.log('Buscando perfil do usuário:', userId);
     const userDoc = await getDoc(doc(db, 'users', userId));
     
     if (userDoc.exists()) {
-      return userDoc.data() as UserProfile;
+      const userData = userDoc.data() as UserProfile;
+      console.log('Perfil do usuário encontrado:', userData);
+      
+      // Se não tiver a propriedade isAdmin, verificamos se é o primeiro usuário
+      if (userData.isAdmin === undefined) {
+        console.log('Verificando se é o primeiro usuário para atribuir status de admin');
+        const usersCollection = collection(db, 'users');
+        const usersQuery = query(usersCollection, limit(2));
+        const usersSnapshot = await getDocs(usersQuery);
+        
+        // Se houver apenas um usuário (este), é o administrador
+        if (usersSnapshot.size === 1) {
+          console.log('É o único usuário, atualizando como admin');
+          const userRef = doc(db, 'users', userId);
+          await updateDoc(userRef, {
+            isAdmin: true,
+            status: 'approved'
+          });
+          
+          return {
+            ...userData,
+            isAdmin: true,
+            status: 'approved'
+          } as UserProfile;
+        }
+      }
+      
+      return userData;
     }
     
+    console.log('Perfil do usuário não encontrado');
     return null;
   } catch (error) {
     console.error('Erro ao buscar perfil do usuário:', error);
