@@ -277,65 +277,141 @@ export default function Home() {
   }, [closestGuess, nextGuesses, appSettings]);
 
   // Função para renderizar um componente de contagem genérico (usado tanto para countdowns quanto para countup)
-  const renderTimeDisplay = (data: CountdownData | BabyAgeData, title: string, subtitle?: string, isMain = false) => {
+  const renderTimeDisplay = (data: CountdownData | BabyAgeData, title: string, subtitle?: string, isMain = false, type: 'gestational' | 'countdown' | 'guess' = 'countdown') => {
     if (!data) return null;
     
+    // Definir classes e cores com base no tipo
+    let cardClasses = "rounded-lg border shadow-sm transition-all duration-300 overflow-hidden h-full";
+    const bgGradient = "bg-white dark:bg-slate-900";
+    let borderColor = "border-slate-200 dark:border-slate-800";
+    let titleColor = "text-purple-600 dark:text-purple-400";
+    const subtitleColor = "text-slate-500 dark:text-slate-400";
+    let numberColor = "text-purple-600 dark:text-purple-400";
+    const labelColor = "text-slate-500 dark:text-slate-400";
+    let progressColors = "from-purple-500 to-indigo-500";
+    let pillColor = "bg-purple-100/70 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300";
+    
+    // Ajustar estilos baseados no tipo
+    if (type === 'gestational') {
+      borderColor = "border-emerald-200 dark:border-emerald-800/60";
+      titleColor = "text-emerald-600 dark:text-emerald-400";
+      numberColor = "text-emerald-600 dark:text-emerald-400";
+      progressColors = "from-emerald-500 to-teal-500";
+      pillColor = "bg-emerald-100/70 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300";
+    } else if (type === 'countdown') {
+      borderColor = "border-indigo-200 dark:border-indigo-800/60";
+      titleColor = "text-indigo-600 dark:text-indigo-400";
+      numberColor = "text-indigo-600 dark:text-indigo-400";
+      progressColors = "from-indigo-500 to-blue-500";
+      pillColor = "bg-indigo-100/70 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300";
+    } else if (type === 'guess') {
+      borderColor = "border-indigo-200 dark:border-indigo-800/60";
+      titleColor = "text-indigo-600 dark:text-indigo-400";
+      numberColor = "text-indigo-600 dark:text-indigo-400";
+      progressColors = "from-indigo-500 to-purple-500";
+      pillColor = "bg-indigo-100/70 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300";
+    }
+    
+    if (isMain) {
+      cardClasses += " hover:shadow-md hover:-translate-y-1";
+    }
+    
+    // Para contagens de tempo, determinar se mostramos semanas ou apenas dias
+    const showWeeks = type === 'gestational';
+    const gridCols = showWeeks ? "grid-cols-5" : "grid-cols-4";
+    
+    // Definir tamanhos com base em se é um card principal ou secundário
+    // Cards de contagem regressiva e idade gestacional serão menores
+    const headerPadding = isMain ? "p-3 sm:p-4" : "p-2";
+    const contentPadding = isMain ? "p-3 sm:p-4" : "p-2";
+    const numberSize = isMain ? "text-2xl sm:text-3xl" : "text-lg sm:text-xl";
+    const titleSize = isMain ? "text-lg sm:text-xl" : "text-sm";
+    const subtitleSize = isMain ? "text-sm" : "text-xs";
+    const pillPadding = isMain ? "px-3 py-2" : "px-2 py-1.5";
+    
     return (
-      <div className={`${isMain ? 'p-5' : 'p-4'} rounded-xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-800 shadow-md hover:shadow-lg transition-all h-full`}>
-        <div className="text-center mb-3">
-          <h3 className={`${isMain ? 'text-2xl' : 'text-xl'} font-bold text-indigo-600 dark:text-indigo-400 mb-1`}>
-            {title}
-          </h3>
-          {subtitle && (
-            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
-              {subtitle}
-            </p>
+      <div className={`${cardClasses} ${borderColor} ${bgGradient}`}>
+        {/* Cabeçalho do card */}
+        <div className={`${headerPadding} border-b ${borderColor} flex items-center justify-between`}>
+          <div className="flex flex-col">
+            <h3 className={`font-bold ${titleColor} ${titleSize}`}>
+              {title}
+            </h3>
+            {subtitle && (
+              <p className={`${subtitleSize} ${subtitleColor} mt-0.5`}>
+                {subtitle}
+              </p>
+            )}
+          </div>
+        </div>
+        
+        {/* Conteúdo do card */}
+        <div className={contentPadding}>
+          {/* Contadores de tempo */}
+          <div className={`grid ${gridCols} gap-1.5 text-center`}>
+            {showWeeks && (
+              <div className="flex flex-col items-center justify-center">
+                <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                  <span className={`${numberSize} font-bold ${numberColor}`}>{data.weeks}</span>
+                  <span className={`text-xs font-medium ${labelColor}`}>Sem</span>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>
+                  {showWeeks ? data.days : Math.floor(data.weeks * 7 + data.days)}
+                </span>
+                <span className={`text-xs font-medium ${labelColor}`}>Dias</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>{data.hours}</span>
+                <span className={`text-xs font-medium ${labelColor}`}>Hrs</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>{data.minutes}</span>
+                <span className={`text-xs font-medium ${labelColor}`}>Min</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>{data.seconds}</span>
+                <span className={`text-xs font-medium ${labelColor}`}>Seg</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Barra de progresso */}
+          {'progress' in data && (
+            <div className="mt-2 space-y-1">
+              <div className="flex justify-between text-xs font-medium">
+                <span className={labelColor}>Progresso</span>
+                <span className={titleColor}>{Math.round(data.progress || 0)}%</span>
+              </div>
+              <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className={`h-full bg-gradient-to-r ${progressColors} rounded-full transition-all duration-500 ease-in-out`}
+                  style={{ width: `${data.progress || 0}%` }} 
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Informação adicional - só mostra nos cards principais ou quando não há outra informação */}
+          {'totalDays' in data && showWeeks && isMain && (
+            <div className={`mt-2 ${pillColor} text-center rounded-md py-1 px-2 text-xs font-medium`}>
+              Total: {data.totalDays} dias ({data.weeks} semanas e {data.days} dias)
+            </div>
           )}
         </div>
-        
-        <div className="grid grid-cols-5 gap-2 text-center mb-3">
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.weeks}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Sem</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.days}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Dias</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.hours}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Hrs</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.minutes}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Min</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.seconds}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Seg</span>
-          </div>
-        </div>
-        
-        {'progress' in data && (
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm font-medium">
-              <span className="text-slate-700 dark:text-slate-300">Progresso</span>
-              <span className="text-indigo-600 dark:text-indigo-400">{Math.round(data.progress || 0)}%</span>
-            </div>
-            <div className="h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
-                style={{ width: `${data.progress || 0}%` }} 
-              />
-            </div>
-          </div>
-        )}
-        
-        {'totalDays' in data && (
-          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-3 font-medium">
-            Total: {data.totalDays} dias ({data.weeks} sem e {data.days} d)
-          </p>
-        )}
       </div>
     );
   };
@@ -351,50 +427,92 @@ export default function Home() {
       year: 'numeric'
     })}`;
     
+    // Calcular dias totais (semanas * 7 + dias)
+    const totalDays = countdown.weeks * 7 + countdown.days;
+    
+    // Definir estilos para o card de palpites
+    const cardClasses = `rounded-lg border shadow-md transition-all duration-300 overflow-hidden h-full
+                        ${isMain 
+                          ? 'border-indigo-300 dark:border-indigo-700 hover:shadow-xl hover:-translate-y-1' 
+                          : 'border-indigo-200 dark:border-indigo-800/60'}`;
+    const titleColor = "text-indigo-600 dark:text-indigo-400";
+    const subtitleColor = "text-slate-500 dark:text-slate-400";
+    const numberColor = "text-indigo-600 dark:text-indigo-400";
+    const labelColor = "text-slate-500 dark:text-slate-400";
+    const pillColor = "bg-indigo-100/70 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300";
+    
+    // Definir tamanhos com base em se é um card principal ou secundário
+    const headerPadding = isMain ? "p-3 sm:p-4" : "p-2";
+    const contentPadding = isMain ? "p-3 sm:p-4" : "p-2";
+    const numberSize = isMain ? "text-2xl sm:text-3xl" : "text-lg sm:text-xl";
+    const titleSize = isMain ? "text-lg sm:text-xl" : "text-sm";
+    const subtitleSize = isMain ? "text-sm" : "text-xs";
+    const pillPadding = isMain ? "px-3 py-2" : "px-2 py-1.5";
+    
+    // Definir gradiente de fundo para o card principal (palpite mais próximo)
+    const bgGradient = isMain 
+      ? "bg-gradient-to-br from-white to-indigo-50 dark:from-slate-900 dark:to-indigo-950/30" 
+      : "bg-white dark:bg-slate-900";
+    
     return (
-      <div className={`${isMain ? 'p-5' : 'p-4'} rounded-xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-800 shadow-md hover:shadow-lg transition-all h-full`}>
-        <div className="text-center mb-3">
-          <h3 className={`${isMain ? 'text-2xl' : 'text-xl'} font-bold text-indigo-600 dark:text-indigo-400 mb-1 truncate`}>
-            {guess.userName}
-          </h3>
-          <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
-            {subtitle}
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-5 gap-2 text-center mb-3">
+      <div className={`${cardClasses} ${bgGradient}`}>
+        {/* Cabeçalho do card */}
+        <div className={`${headerPadding} border-b border-indigo-200 dark:border-indigo-800/60`}>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.weeks}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Sem</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.days}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Dias</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.hours}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Hrs</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.minutes}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Min</span>
-          </div>
-          <div className="flex flex-col">
-            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.seconds}</span>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Seg</span>
+            <h3 className={`font-bold ${titleColor} ${titleSize} truncate`}>
+              {guess.userName} {isMain && <span className="ml-1 text-xs font-medium px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300 rounded-full">Mais próximo</span>}
+            </h3>
+            <p className={`${subtitleSize} ${subtitleColor} mt-0.5`}>
+              {subtitle}
+            </p>
           </div>
         </div>
         
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm font-medium">
-            <span className="text-slate-700 dark:text-slate-300">Progresso</span>
-            <span className="text-indigo-600 dark:text-indigo-400">{Math.round(countdown.progress)}%</span>
+        {/* Conteúdo do card */}
+        <div className={contentPadding}>
+          {/* Contadores de tempo */}
+          <div className="grid grid-cols-4 gap-1.5 text-center">
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>{totalDays}</span>
+                <span className={`text-xs font-medium ${labelColor}`}>Dias</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>{countdown.hours}</span>
+                <span className={`text-xs font-medium ${labelColor}`}>Hrs</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>{countdown.minutes}</span>
+                <span className={`text-xs font-medium ${labelColor}`}>Min</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center">
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
+                <span className={`${numberSize} font-bold ${numberColor}`}>{countdown.seconds}</span>
+                <span className={`text-xs font-medium ${labelColor}`}>Seg</span>
+              </div>
+            </div>
           </div>
-          <div className="h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
-              style={{ width: `${countdown.progress}%` }} 
-            />
+          
+          {/* Barra de progresso */}
+          <div className="mt-2 space-y-1">
+            <div className="flex justify-between text-xs font-medium">
+              <span className={labelColor}>Progresso</span>
+              <span className={titleColor}>{Math.round(countdown.progress)}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
+                style={{ width: `${countdown.progress}%` }} 
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -496,7 +614,7 @@ export default function Home() {
 
       {babyBorn ? (
         // Exibição quando o bebê já nasceu
-        <div className="w-full max-w-5xl mx-auto space-y-8">
+        <div className="w-full max-w-5xl mx-auto space-y-6">
           <Card className="w-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 shadow-lg border-indigo-200 dark:border-indigo-800">
             <CardHeader className="py-4 px-6">
               <CardTitle className="text-2xl text-center text-indigo-700 dark:text-indigo-400">
@@ -521,7 +639,8 @@ export default function Home() {
                       babyAge, 
                       `Idade da ${appSettings?.babyName || 'Chloe'}`, 
                       undefined, 
-                      true
+                      true,
+                      'gestational'
                     )}
                   </div>
                 )}
@@ -553,12 +672,12 @@ export default function Home() {
         </div>
       ) : (
         // Exibição quando o bebê ainda não nasceu
-        <div className="w-full max-w-6xl mx-auto space-y-6 md:space-y-8">
-          {/* Seção superior: Countdown e Idade Gestacional */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+        <div className="w-full max-w-6xl mx-auto space-y-4 md:space-y-6">
+          {/* Seção superior: Countdown e Idade Gestacional - cards menores e com a mesma altura */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 max-w-3xl mx-auto">
             {/* Countdown para data esperada */}
             {expectedBirthCountdown && (
-              <div className="transform hover:-translate-y-1 transition-transform duration-300">
+              <div className="transform transition-all duration-300 h-full">
                 {renderTimeDisplay(
                   expectedBirthCountdown, 
                   "Contagem Regressiva", 
@@ -567,14 +686,15 @@ export default function Home() {
                       day: '2-digit',
                       month: '2-digit'
                     }) : 'Não definida'}`,
-                  true
+                  false,
+                  'countdown'
                 )}
               </div>
             )}
             
             {/* Idade Gestacional (baseada na DUM) */}
             {gestationalAge && appSettings?.lastMenstruationDate && (
-              <div className="transform hover:-translate-y-1 transition-transform duration-300">
+              <div className="transform transition-all duration-300 h-full">
                 {renderTimeDisplay(
                   gestationalAge, 
                   "Idade Gestacional", 
@@ -582,29 +702,38 @@ export default function Home() {
                     day: '2-digit',
                     month: '2-digit'
                   })}`,
-                  true
+                  false,
+                  'gestational'
                 )}
               </div>
             )}
           </div>
           
-          {/* Palpite mais próximo em destaque */}
+          {/* Palpite mais próximo em destaque - card maior e mais destacado */}
           {closestGuess?.guess && (
-            <div className="mt-2">
-              <h2 className="text-xl font-bold text-center mb-4 text-indigo-700 dark:text-indigo-400">Palpite Mais Próximo</h2>
-              <div className="transform hover:-translate-y-1 transition-transform duration-300">
-                {renderCountdown(closestGuess.guess, true)}
+            <div className="mt-8">
+              <div className="transform transition-all duration-300">
+                <div className="max-w-4xl mx-auto relative">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-indigo-400 to-purple-400 dark:from-indigo-700 dark:to-purple-600 rounded-xl blur-sm opacity-50"></div>
+                  <div className="relative">
+                    {renderCountdown(closestGuess.guess, true)}
+                  </div>
+                </div>
               </div>
             </div>
           )}
           
           {/* Próximos palpites */}
           {nextGuesses.length > 0 && (
-            <div className="space-y-4 mt-2">
-              <h2 className="text-lg font-semibold text-center mb-3 text-indigo-700 dark:text-indigo-400">Próximos Palpites</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {nextGuesses.map((guess) => (
-                  <div key={guess.id} className="transform hover:-translate-y-1 transition-transform duration-300">
+            <div className="space-y-4 mt-8">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 ${
+                nextGuesses.length === 1 ? 'md:grid-cols-1 max-w-md' :
+                nextGuesses.length === 2 ? 'md:grid-cols-2 max-w-2xl' :
+                nextGuesses.length === 3 ? 'md:grid-cols-3 max-w-4xl' :
+                'md:grid-cols-4'
+              } gap-4 mx-auto`}>
+                {nextGuesses.slice(0, 4).map((guess) => (
+                  <div key={guess.id} className="transform hover:-translate-y-1 transition-all duration-300">
                     {renderCountdown(guess)}
                   </div>
                 ))}

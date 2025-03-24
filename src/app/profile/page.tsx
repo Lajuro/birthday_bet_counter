@@ -157,21 +157,17 @@ export default function ProfilePage() {
 
   return (
     <>
-    <style jsx global>{`
-        body {
-          overflow: hidden;
-        }
-      `}</style>
-    <div className="h-[calc(100vh-64px)]">
-      <div className="container mx-auto h-full py-4">
-        <div className="flex justify-center items-start w-full h-full">
+    {/* Removendo barras de rolagem desnecessárias */}
+    <div className="min-h-[calc(100vh-65px)] pb-6">
+      <div className="container mx-auto py-4 px-4 h-full">
+        <div className="flex justify-center items-start w-full">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full max-w-6xl px-4 sm:px-6 h-full flex flex-col"
+            className="w-full max-w-6xl"
           >
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-6">
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -189,11 +185,11 @@ export default function ProfilePage() {
               </motion.h1>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 h-[calc(100%-60px)] overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 auto-rows-auto">
               {/* Cartão da esquerda - Avatar e informações básicas */}
-              <div className="lg:col-span-2 h-full overflow-auto">
+              <div className="lg:col-span-2">
                 <MotionCard
-                  className="h-full transform hover:-translate-y-1 transition-transform duration-300 border border-slate-800 bg-slate-900 overflow-auto"
+                  className="transform hover:-translate-y-1 transition-transform duration-300 border border-slate-800 bg-slate-900"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
@@ -219,7 +215,7 @@ export default function ProfilePage() {
                       transition={{ duration: 0.5, delay: 0.6 }}
                     >
                       <p className="font-medium text-lg mb-1 text-white">{user?.displayName || "Usuário"}</p>
-                      <p className="text-slate-400 text-sm mb-3 px-2">{user?.email}</p>
+                      <p className="text-slate-400 text-sm mb-3 px-2 break-all">{user?.email}</p>
                       
                       <Badge variant={isGoogleUser ? "secondary" : "outline"} className="mb-2 bg-slate-800 text-white border-slate-700">
                         {isGoogleUser ? (
@@ -253,7 +249,7 @@ export default function ProfilePage() {
               
               {/* Lado direito - Formulários de edição */}
               <MotionCard 
-                className="lg:col-span-3 transform hover:-translate-y-1 transition-transform duration-300 border border-slate-800 bg-slate-900 h-full overflow-auto"
+                className="lg:col-span-3 transform hover:-translate-y-1 transition-transform duration-300 border border-slate-800 bg-slate-900"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
@@ -263,9 +259,9 @@ export default function ProfilePage() {
                   <CardDescription className="text-slate-400">Atualize suas informações pessoais e gerencie sua conta</CardDescription>
                 </CardHeader>
                 
-                <CardContent className="px-4 sm:px-6 pb-6 pt-4 bg-slate-900 overflow-y-auto">
+                <CardContent className="px-4 sm:px-6 pb-6 pt-4 bg-slate-900">
                   <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="w-full mb-6 bg-slate-800">
+                    <TabsList className="w-full mb-6 bg-slate-800 flex overflow-x-auto">
                       <TabsTrigger 
                         value="profile" 
                         className="flex-1 flex items-center justify-center data-[state=active]:bg-slate-900 data-[state=active]:text-purple-500"
@@ -368,12 +364,12 @@ export default function ProfilePage() {
                       </div>
                       
                       {isGoogleUser ? (
-                        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900 border border-purple-900/50 rounded-xl p-6 shadow-lg overflow-hidden relative">
+                        <div className="bg-gradient-to-br from-slate-800/80 to-slate-900 border border-purple-900/50 rounded-xl p-4 sm:p-6 shadow-lg overflow-hidden relative">
                           {/* Elementos decorativos de fundo */}
                           <div className="absolute -right-10 -top-10 w-40 h-40 bg-purple-500/10 rounded-full blur-2xl"></div>
                           <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl"></div>
                           
-                          <div className="flex items-start gap-4 relative z-10">
+                          <div className="flex flex-col sm:flex-row items-start gap-4 relative z-10">
                             <div className="bg-amber-500/20 p-3 rounded-full shadow-inner flex-shrink-0">
                               <InfoIcon className="h-6 w-6 text-amber-300" />
                             </div>
@@ -401,7 +397,7 @@ export default function ProfilePage() {
                               </Button>
                               
                               {/* Badge decorativo */}
-                              <div className="absolute bottom-3 right-3 opacity-80">
+                              <div className="hidden sm:block absolute bottom-3 right-3 opacity-80">
                                 <div className="flex items-center gap-1.5 text-xs text-slate-500">
                                   <LockIcon className="h-3 w-3" />
                                   <span>Segurança Google</span>
@@ -498,7 +494,7 @@ export default function ProfilePage() {
                                 <Button 
                                   type="submit" 
                                   disabled={isUpdating}
-                                  className="sm:flex-1 h-11 sm:h-12 bg-purple-600 hover:bg-purple-700 text-white"
+                                  className="sm:flex-1 h-11 sm:h-12 bg-purple-600 hover:bg-purple-700 text-white order-2 sm:order-1"
                                 >
                                   {isUpdating ? (
                                     <>
@@ -516,7 +512,7 @@ export default function ProfilePage() {
                                   type="button" 
                                   variant="outline" 
                                   onClick={() => setShowPasswordForm(false)}
-                                  className="sm:flex-1 h-11 sm:h-12 border-slate-700 text-white hover:bg-slate-800"
+                                  className="sm:flex-1 h-11 sm:h-12 border-slate-700 text-white hover:bg-slate-800 order-1 sm:order-2"
                                 >
                                   <X className="mr-2 h-4 w-4" />
                                   <span>Cancelar</span>

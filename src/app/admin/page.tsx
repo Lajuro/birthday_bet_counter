@@ -1,25 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { 
-  getAllGuesses, 
-  getAppSettings, 
-  updateAppSettings, 
-  deleteGuess,
-  deleteManyGuesses,
-  getAllUsers,
-  updateUserProfile,
-  determineWinner,
-  WinnerResult,
-  getPendingUsers,
-  approveUser,
-  rejectUser,
-  createBulkGuess,
-  serverTimestamp
-} from '@/lib/firebase/firestore';
+  Users, 
+  Trash2, 
+  CheckCircle,
+  Edit, 
+  Settings,
+  ListPlus,
+  PlusCircle,
+  Check as CheckIcon,
+  UserCheck,
+  Loader2,
+  CalendarIcon,
+  Save,
+  Baby,
+  CalendarDays,
+  Settings2,
+  Plus,
+  Trophy,
+  BarChart3,
+  XCircle,
+  X
+} from 'lucide-react';
+import { getAllGuesses, getAppSettings, updateAppSettings, deleteGuess, deleteManyGuesses, getAllUsers, updateUserProfile, determineWinner, WinnerResult, getPendingUsers, approveUser, rejectUser, createBulkGuess, serverTimestamp } from '@/lib/firebase/firestore';
 import { BirthGuess, AppSettings, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,11 +36,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CalendarIcon, PlusCircle, Check as CheckIcon, X, Loader2, Edit, Trash2, CheckCircle, XCircle, ListPlus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Timestamp } from 'firebase/firestore';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { deleteField, doc, updateDoc } from 'firebase/firestore';
 import {
   Popover,
   PopoverContent,
@@ -51,6 +58,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { db } from '@/lib/firebase/config';
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 
 export default function AdminPage() {
   const { user, userProfile, isLoading } = useAuth();
@@ -63,13 +76,20 @@ export default function AdminPage() {
   const [isOpen, setIsOpen] = useState(false);
   const [updatingDate, setUpdatingDate] = useState(false);
   const [actualBirthDate, setActualBirthDate] = useState<Date | undefined>(undefined);
-  // Estado removido pois não está sendo utilizado
-  // const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
-  // const [selectedGuess, setSelectedGuess] = useState<BirthGuess | null>(null);
-  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
-  const [processingAction, setProcessingAction] = useState<string | null>(null);
-  const [deletingGuess, setDeletingGuess] = useState<string | null>(null);
-  const [winnerResult, setWinnerResult] = useState<WinnerResult | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
+  const [newGuess, setNewGuess] = useState<{
+    userName: string;
+    comment: string;
+    date: Date | undefined;
+  }>({
+    userName: '',
+    comment: '',
+    date: undefined
+  });
+  const [guessesByDate, setGuessesByDate] = useState<BirthGuess[]>([]);
+  const [isCreatingGuess, setIsCreatingGuess] = useState(false);
   const [addingBulkGuesses, setAddingBulkGuesses] = useState(false);
   const [currentGuessInfo, setCurrentGuessInfo] = useState<{index: number, total: number, name: string} | null>(null);
   const [showWinnerResult, setShowWinnerResult] = useState(false);
@@ -77,8 +97,10 @@ export default function AdminPage() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
   const [lastCheckedIndex, setLastCheckedIndex] = useState<number | null>(null);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
-  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
+  const [deletingGuess, setDeletingGuess] = useState<string | null>(null);
+  const [winnerResult, setWinnerResult] = useState<WinnerResult | null>(null);
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -157,6 +179,44 @@ export default function AdminPage() {
     }
   };
 
+  const handleRemoveActualBirthDate = async () => {
+    if (!settings) return;
+    
+    setUpdatingDate(true);
+    setShowWinnerResult(false);
+    
+    try {
+      // Criar um objeto sem tipar como AppSettings para usar o deleteField()
+      const updateData = {
+        actualBirthDate: deleteField(),
+        updatedAt: serverTimestamp()
+      };
+      
+      // Atualizar no Firestore sem especificar a tipagem
+      const settingsRef = doc(db, 'settings', 'app');
+      await updateDoc(settingsRef, updateData);
+      
+      toast.success('Data de nascimento removida com sucesso!');
+      
+      // Atualizar o estado local sem a data de nascimento
+      const updatedSettings = { ...settings };
+      delete updatedSettings.actualBirthDate;
+      setSettings(updatedSettings);
+      
+      // Limpar os dados do vencedor
+      setWinnerResult(null);
+      // Fechar o diálogo
+      setIsOpen(false);
+      // Limpar a data selecionada
+      setActualBirthDate(undefined);
+    } catch (error) {
+      console.error('Erro ao remover data de nascimento:', error);
+      toast.error('Erro ao remover data de nascimento.');
+    } finally {
+      setUpdatingDate(false);
+    }
+  };
+
   const handleDeleteGuess = async (guessId: string) => {
     setDeletingGuess(guessId);
     try {
@@ -206,21 +266,6 @@ export default function AdminPage() {
       setUpdatingUser(null);
     }
   };
-
-  // Função removida pois não está sendo utilizada
-  // const handleGuessFormSuccess = async () => {
-  //   // Recarregar a lista de palpites
-  //   try {
-  //     const updatedGuesses = await getAllGuesses();
-  //     setGuesses(updatedGuesses);
-  //   } catch (error) {
-  //     console.error("Erro ao recarregar palpites:", error);
-  //   }
-    
-  //   // Fechar o modal
-  //   setIsGuessDialogOpen(false);
-  //   setSelectedGuess(null);
-  // };
 
   // Função para aprovar um usuário
   const handleApproveUser = async (userId: string) => {
@@ -356,8 +401,6 @@ export default function AdminPage() {
                 name: string;
                 date: string;
                 relation?: string;
-                weight?: string;
-                height?: string;
                 comment?: string;
               } = {
                 name: '',
@@ -370,8 +413,6 @@ export default function AdminPage() {
                   if (header === 'nome') guessObj.name = values[index];
                   else if (header === 'data') guessObj.date = values[index];
                   else if (header === 'relação' || header === 'relacao') guessObj.relation = values[index];
-                  else if (header === 'peso (kg)' || header === 'peso') guessObj.weight = values[index];
-                  else if (header === 'altura (cm)' || header === 'altura') guessObj.height = values[index];
                   else if (header === 'comentário' || header === 'comentario') guessObj.comment = values[index];
                 }
               });
@@ -396,8 +437,6 @@ export default function AdminPage() {
                   name: item.userName || item.name || '',
                   date: item.date || '',
                   relation: item.relation || undefined,
-                  weight: item.weight !== undefined ? String(item.weight) : undefined,
-                  height: item.height !== undefined ? String(item.height) : undefined,
                   comment: item.comment || undefined
                 };
                 console.log(`Processando item JSON: ${processedItem.name}, ${processedItem.date}`);
@@ -409,8 +448,6 @@ export default function AdminPage() {
                 name: jsonData.userName || jsonData.name || '',
                 date: jsonData.date || '',
                 relation: jsonData.relation || undefined,
-                weight: jsonData.weight !== undefined ? String(jsonData.weight) : undefined,
-                height: jsonData.height !== undefined ? String(jsonData.height) : undefined,
                 comment: jsonData.comment || undefined
               };
               
@@ -467,8 +504,6 @@ export default function AdminPage() {
             guessDate: Timestamp;
             userId: string;
             createdAt: ReturnType<typeof serverTimestamp>;
-            weight?: number;
-            height?: number;
             comment?: string;
           } = {
             userName: guess.name + (guess.relation ? ` (${guess.relation})` : ''),
@@ -478,14 +513,6 @@ export default function AdminPage() {
           };
           
           // Adicionar campos opcionais apenas se tiverem valores válidos
-          if (guess.weight && !isNaN(parseFloat(guess.weight))) {
-            newGuess.weight = parseFloat(guess.weight);
-          }
-          
-          if (guess.height && !isNaN(parseFloat(guess.height))) {
-            newGuess.height = parseFloat(guess.height);
-          }
-          
           if (guess.comment) {
             newGuess.comment = guess.comment;
           }
@@ -596,21 +623,22 @@ export default function AdminPage() {
     }
 
     // Criar cabeçalho do CSV
-    const headers = ['Nome', 'Data', 'Peso (kg)', 'Altura (cm)', 'Comentário'];
+    const headers = ['Nome', 'Data', 'Comentário'];
     let csvContent = headers.join(',') + '\n';
     
     // Adicionar dados
     guesses.forEach(guess => {
       const dateStr = guess.guessDate && guess.guessDate.seconds 
-        ? format(new Date(guess.guessDate.seconds * 1000), "dd/MM/yyyy HH:mm", { locale: ptBR }) 
-        : '';
+        ? format(
+          new Date(guess.guessDate.seconds * 1000),
+          "dd/MM/yyyy HH:mm",
+          { locale: ptBR }
+        ) : '-';
       
       // Escapar vírgulas e aspas nos dados
       const row = [
         `"${guess.userName.replace(/"/g, '""')}"`,
         `"${dateStr}"`,
-        `"${guess.weight || ''}"`,
-        `"${guess.height || ''}"`,
         `"${(guess.comment || '').replace(/"/g, '""')}"`
       ];
       
@@ -649,8 +677,6 @@ export default function AdminPage() {
             "dd/MM/yyyy HH:mm",
             { locale: ptBR }
           ) : null,
-        weight: guess.weight || null,
-        height: guess.height || null,
         comment: guess.comment || null
       };
     });
@@ -669,6 +695,67 @@ export default function AdminPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setNewGuess({...newGuess, date});
+    
+    if (date) {
+      // Filtrar os palpites que têm a mesma data
+      const formattedSelectedDate = format(date, 'yyyy-MM-dd');
+      const matchingGuesses = guesses.filter(guess => {
+        // Convertemos a data do palpite para o mesmo formato para comparação
+        const guessDate = guess.guessDate.toDate();
+        const formattedGuessDate = format(guessDate, 'yyyy-MM-dd');
+        return formattedGuessDate === formattedSelectedDate;
+      });
+      
+      setGuessesByDate(matchingGuesses);
+    } else {
+      setGuessesByDate([]);
+    }
+  };
+
+  const handleAddGuess = async () => {
+    if (!newGuess.userName || !newGuess.date) {
+      toast.error("Por favor, preencha o nome e a data");
+      return;
+    }
+
+    setIsCreatingGuess(true);
+
+    try {
+      // Criar um objeto com os dados do palpite
+      const guessData = {
+        userName: newGuess.userName,
+        userId: "admin_created", // Como é criado pelo admin, usamos um ID especial
+        guessDate: Timestamp.fromDate(newGuess.date), // Corrigido de 'date' para 'guessDate'
+        comment: newGuess.comment || undefined
+      };
+
+      // Adicionar o palpite ao Firestore
+      await createBulkGuess(guessData);
+
+      // Recarregar os palpites
+      const updatedGuesses = await getAllGuesses();
+      setGuesses(updatedGuesses);
+
+      // Limpar o formulário e fechar o modal
+      setNewGuess({
+        userName: '',
+        comment: '',
+        date: undefined
+      });
+      setGuessesByDate([]);
+      setIsGuessDialogOpen(false);
+      
+      toast.success("Palpite criado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao criar palpite:", error);
+      toast.error("Erro ao criar palpite. Tente novamente.");
+    } finally {
+      setIsCreatingGuess(false);
+    }
   };
 
   if (isLoading || loading) {
@@ -692,16 +779,77 @@ export default function AdminPage() {
       
       {!isLoading && user && userProfile && userProfile.isAdmin && (
         <>
+          <div className="bg-gradient-to-r from-primary/10 to-transparent p-6 rounded-lg mb-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex items-center gap-3">
+              {userProfile.photoURL ? (
+                <Avatar className="h-12 w-12 border-2 border-primary/20">
+                  <AvatarImage src={userProfile.photoURL} alt={userProfile.displayName || ''} />
+                  <AvatarFallback>{userProfile.displayName?.substring(0, 2) || user.email?.substring(0, 2)}</AvatarFallback>
+                </Avatar>
+              ) : (
+                <Avatar className="h-12 w-12 bg-primary/20">
+                  <AvatarFallback className="text-primary">{userProfile.displayName?.substring(0, 2) || user.email?.substring(0, 2)}</AvatarFallback>
+                </Avatar>
+              )}
+              <div>
+                <h2 className="text-xl font-semibold">Bem-vindo, {userProfile.displayName || user.email}!</h2>
+                <p className="text-muted-foreground text-sm">Painel de Administração • {new Date().toLocaleDateString('pt-BR')}</p>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsOpen(true)}
+              disabled={updatingDate}
+              className="bg-background border-primary/20 hover:bg-primary/10"
+            >
+              {settings?.actualBirthDate ? "Alterar data real" : "Definir data real"}
+            </Button>
+          </div>
+          
           <Tabs defaultValue="guesses" className="mt-6">
-            <TabsList className="mb-4">
-              <TabsTrigger value="guesses">Palpites</TabsTrigger>
-              <TabsTrigger value="users">Usuários</TabsTrigger>
-              <TabsTrigger value="pending-users">Aprovação de Usuários</TabsTrigger>
-              <TabsTrigger value="settings">Configurações</TabsTrigger>
-            </TabsList>
+            <div className="mb-4 overflow-x-auto pb-2 -mx-4 px-4">
+              <TabsList className="h-auto p-0 bg-transparent gap-2 flex-nowrap min-w-max">
+                <TabsTrigger 
+                  value="guesses" 
+                  className="relative h-12 px-4 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none cursor-pointer transition-all hover:bg-muted/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <span>Palpites</span>
+                  </div>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="users" 
+                  className="relative h-12 px-4 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none cursor-pointer transition-all hover:bg-muted/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    <span>Usuários</span>
+                  </div>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="pending-users" 
+                  className="relative h-12 px-4 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none cursor-pointer transition-all hover:bg-muted/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-5 w-5" />
+                    <span className="whitespace-nowrap">Aprovação de Usuários</span>
+                  </div>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="settings" 
+                  className="relative h-12 px-4 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:shadow-none cursor-pointer transition-all hover:bg-muted/40"
+                >
+                  <div className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    <span>Configurações</span>
+                  </div>
+                </TabsTrigger>
+              </TabsList>
+            </div>
             
-            <TabsContent value="guesses">
-              <Card>
+            <TabsContent value="guesses" className="mt-0 shadow-none border-none">
+              <Card className="border-none shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
@@ -710,13 +858,11 @@ export default function AdminPage() {
                         {guesses.length} palpites registrados
                       </CardDescription>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                       <Button 
-                        onClick={() => {
-                          // Implementação atual para abrir diálogo de novo palpite
-                          // setIsGuessDialogOpen(true);
-                        }}
+                        onClick={() => setIsGuessDialogOpen(true)}
                         disabled={loading}
+                        className="cursor-pointer flex-grow sm:flex-grow-0"
                       >
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Novo Palpite
@@ -726,6 +872,7 @@ export default function AdminPage() {
                         variant="outline" 
                         onClick={() => setIsImportDialogOpen(true)}
                         disabled={addingBulkGuesses}
+                        className="flex-grow sm:flex-grow-0"
                       >
                         {addingBulkGuesses ? (
                           <>
@@ -748,6 +895,7 @@ export default function AdminPage() {
                       <Button 
                         variant="outline" 
                         onClick={() => setIsExportDialogOpen(true)}
+                        className="flex-grow sm:flex-grow-0"
                       >
                         <CheckIcon className="mr-2 h-4 w-4" />
                         Exportar
@@ -756,6 +904,7 @@ export default function AdminPage() {
                         variant="outline" 
                         onClick={() => setIsBulkDeleteDialogOpen(true)}
                         disabled={isDeletingMultiple || selectedGuesses.length === 0}
+                        className="flex-grow sm:flex-grow-0"
                       >
                         {isDeletingMultiple ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -768,209 +917,470 @@ export default function AdminPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableCaption>Lista de palpites para o nascimento {settings?.babyName ? `da ${settings.babyName}` : ''}</TableCaption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">
-                          <Checkbox 
-                            checked={guesses.length > 0 && selectedGuesses.length === guesses.length}
-                            onCheckedChange={toggleSelectAll}
-                            aria-label="Selecionar todos os palpites"
-                          />
-                        </TableHead>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Data e Hora</TableHead>
-                        <TableHead>Peso (kg)</TableHead>
-                        <TableHead>Altura (cm)</TableHead>
-                        <TableHead>Comentário</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {guesses.length > 0 ? (
-                        guesses.map((guess, index) => (
-                          <TableRow key={guess.id}>
-                            <TableCell>
-                              <Checkbox 
-                                id={`checkbox-${guess.id}`}
-                                checked={selectedGuesses.includes(guess.id)}
-                                onCheckedChange={() => {}}
-                                onClick={(event) => {
-                                  // Passa o evento React para a função de tratamento
-                                  handleCheckboxChange(guess.id, index, event as React.MouseEvent);
-                                }}
-                                className="h-5 w-5 border-2"
-                                aria-label={`Selecionar palpite de ${guess.userName}`}
-                              />
-                            </TableCell>
-                            <TableCell className="font-medium">{guess.userName}</TableCell>
-                            <TableCell>
-                              {guess.guessDate && guess.guessDate.seconds ? 
-                                format(
-                                  new Date(guess.guessDate.seconds * 1000),
-                                  "dd/MM/yyyy HH:mm",
-                                  { locale: ptBR }
-                                ) : "-"
-                              }
-                            </TableCell>
-                            <TableCell>{guess.weight || "-"}</TableCell>
-                            <TableCell>{guess.height || "-"}</TableCell>
-                            <TableCell className="max-w-xs truncate">
-                              {guess.comment || "-"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex justify-end gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="icon"
-                                  onClick={() => {
-                                    // Implementação atual para abrir diálogo de edição de palpite
-                                    // setSelectedGuess(guess);
-                                    // setIsGuessDialogOpen(true);
+                  <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+                    <Table>
+                      <TableCaption>Lista de palpites para o nascimento {settings?.babyName ? `da ${settings.babyName}` : ''}</TableCaption>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[50px]">
+                            <Checkbox 
+                              checked={guesses.length > 0 && selectedGuesses.length === guesses.length}
+                              onCheckedChange={toggleSelectAll}
+                              aria-label="Selecionar todos os palpites"
+                            />
+                          </TableHead>
+                          <TableHead>Usuário</TableHead>
+                          <TableHead>Data e Hora</TableHead>
+                          <TableHead>Comentário</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {guesses.length > 0 ? (
+                          guesses.map((guess, index) => (
+                            <TableRow key={guess.id}>
+                              <TableCell>
+                                <Checkbox 
+                                  id={`checkbox-${guess.id}`}
+                                  checked={selectedGuesses.includes(guess.id)}
+                                  onCheckedChange={() => {}}
+                                  onClick={(event) => {
+                                    // Passa o evento React para a função de tratamento
+                                    handleCheckboxChange(guess.id, index, event as React.MouseEvent);
                                   }}
-                                >
-                                  <Edit className="h-4 w-4" />
-                                  <span className="sr-only">Editar</span>
-                                </Button>
-                                
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button 
-                                      variant="outline" 
-                                      size="icon" 
-                                      className="text-destructive"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                      <span className="sr-only">Excluir</span>
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Esta ação não pode ser desfeita. Isso excluirá permanentemente o palpite
-                                        de &quot;{guess.userName}&quot;.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction 
-                                        className="bg-destructive hover:bg-destructive/90"
-                                        onClick={() => handleDeleteGuess(guess.id)}
-                                        disabled={deletingGuess === guess.id}
+                                  className="h-5 w-5 border-2"
+                                  aria-label={`Selecionar palpite de ${guess.userName}`}
+                                />
+                              </TableCell>
+                              <TableCell className="font-medium whitespace-nowrap">{guess.userName}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {guess.guessDate && guess.guessDate.seconds ? 
+                                  format(
+                                    new Date(guess.guessDate.seconds * 1000),
+                                    "dd/MM/yyyy HH:mm",
+                                    { locale: ptBR }
+                                  ) : "-"
+                                }
+                              </TableCell>
+                              <TableCell className="max-w-[120px] md:max-w-xs truncate">
+                                {guess.comment || "-"}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex justify-end gap-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="icon"
+                                    onClick={() => {
+                                      // Implementação atual para abrir diálogo de edição de palpite
+                                      // setSelectedGuess(guess);
+                                      // setIsGuessDialogOpen(true);
+                                    }}
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                    <span className="sr-only">Editar</span>
+                                  </Button>
+                                  
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button 
+                                        variant="outline" 
+                                        size="icon" 
+                                        className="text-destructive"
                                       >
-                                        {deletingGuess === guess.id ? (
-                                          "Excluindo..."
-                                        ) : (
-                                          "Excluir"
-                                        )}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">Excluir</span>
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Esta ação não pode ser desfeita. Isso excluirá permanentemente o palpite
+                                          de &quot;{guess.userName}&quot;.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                          className="bg-destructive hover:bg-destructive/90"
+                                          onClick={() => handleDeleteGuess(guess.id)}
+                                          disabled={deletingGuess === guess.id}
+                                        >
+                                          {deletingGuess === guess.id ? (
+                                            "Excluindo..."
+                                          ) : (
+                                            "Excluir"
+                                          )}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={5} className="text-center py-4">
+                              Nenhum palpite registrado ainda.
                             </TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-4">
-                            Nenhum palpite registrado ainda.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="users">
-              <Card>
+            <TabsContent value="users" className="mt-0 shadow-none border-none">
+              <Card className="border-none shadow-md">
                 <CardHeader>
                   <CardTitle>Gerenciamento de Usuários</CardTitle>
-                  <CardDescription>Administre os usuários do sistema</CardDescription>
+                  <CardDescription>
+                    Administre os usuários do sistema
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableCaption>Lista de usuários registrados na plataforma</TableCaption>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Data de Registro</TableHead>
-                        <TableHead>Último Login</TableHead>
-                        <TableHead>Admin</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.length > 0 ? (
-                        users.map((userItem) => (
-                          <TableRow key={userItem.uid}>
-                            <TableCell className="font-medium">
-                              {userItem.displayName || 'Usuário sem nome'}
-                            </TableCell>
-                            <TableCell>{userItem.email || '-'}</TableCell>
-                            <TableCell>
-                              {userItem.createdAt && userItem.createdAt.seconds ? 
-                                format(
-                                  new Date(userItem.createdAt.seconds * 1000),
-                                  "dd/MM/yyyy",
-                                  { locale: ptBR }
-                                ) : "-"
-                              }
-                            </TableCell>
-                            <TableCell>
-                              {userItem.lastLogin && userItem.lastLogin.seconds ? 
-                                format(
-                                  new Date(userItem.lastLogin.seconds * 1000),
-                                  "dd/MM/yyyy HH:mm",
-                                  { locale: ptBR }
-                                ) : "-"
-                              }
-                            </TableCell>
-                            <TableCell>
-                              {userItem.isAdmin ? (
-                                <CheckCircle className="h-5 w-5 text-green-500" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-muted-foreground" />
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button 
-                                variant={userItem.isAdmin ? "destructive" : "default"}
-                                size="sm"
-                                onClick={() => handleToggleAdmin(userItem.uid, userItem.isAdmin)}
-                                disabled={updatingUser === userItem.uid || userItem.uid === user?.uid}
-                              >
-                                {updatingUser === userItem.uid ? (
-                                  "Atualizando..."
-                                ) : userItem.isAdmin ? (
-                                  "Remover Admin"
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableCaption>Lista de usuários registrados na plataforma</TableCaption>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Data de Registro</TableHead>
+                          <TableHead>Último Login</TableHead>
+                          <TableHead>Admin</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {users.length > 0 ? (
+                          users.map((userItem) => (
+                            <TableRow key={userItem.uid}>
+                              <TableCell className="font-medium whitespace-nowrap">
+                                {userItem.displayName || 'Usuário sem nome'}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">{userItem.email || '-'}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {userItem.createdAt && userItem.createdAt.seconds ? 
+                                  format(
+                                    new Date(userItem.createdAt.seconds * 1000),
+                                    "dd/MM/yyyy",
+                                    { locale: ptBR }
+                                  ) : "-"
+                                }
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {userItem.lastLogin && userItem.lastLogin.seconds ? 
+                                  format(
+                                    new Date(userItem.lastLogin.seconds * 1000),
+                                    "dd/MM/yyyy HH:mm",
+                                    { locale: ptBR }
+                                  ) : "-"
+                                }
+                              </TableCell>
+                              <TableCell>
+                                {userItem.isAdmin ? (
+                                  <CheckCircle className="h-5 w-5 text-green-500" />
                                 ) : (
-                                  "Tornar Admin"
+                                  <XCircle className="h-5 w-5 text-muted-foreground" />
                                 )}
-                              </Button>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button 
+                                  variant={userItem.isAdmin ? "destructive" : "default"}
+                                  size="sm"
+                                  onClick={() => handleToggleAdmin(userItem.uid, userItem.isAdmin)}
+                                  disabled={updatingUser === userItem.uid || userItem.uid === user?.uid}
+                                >
+                                  {updatingUser === userItem.uid ? (
+                                    "Atualizando..."
+                                  ) : userItem.isAdmin ? (
+                                    "Remover Admin"
+                                  ) : (
+                                    "Tornar Admin"
+                                  )}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={6} className="text-center py-4">
+                              Nenhum usuário encontrado.
                             </TableCell>
                           </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={6} className="text-center py-4">
-                            Nenhum usuário encontrado.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
             
-            <TabsContent value="pending-users">
-              <Card>
+            {/* Nova aba de Configurações do Sistema */}
+            <TabsContent value="settings" className="mt-0 shadow-none border-none">
+              <Card className="border-none shadow-md">
+                <CardHeader className="pb-0">
+                  <CardTitle>Configurações do Sistema</CardTitle>
+                  <CardDescription>
+                    Gerencie as configurações principais do sistema de palpites.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-8 px-1">
+                    {/* Seção de Informações do Bebê */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Baby className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-medium">Informações do Bebê</h3>
+                      </div>
+                      <Separator className="my-2" />
+                      
+                      {/* Nome do Bebê */}
+                      <div className="space-y-2">
+                        <Label htmlFor="babyName" className="text-sm font-medium">
+                          Nome do Bebê
+                        </Label>
+                        <Input
+                          id="babyName"
+                          value={settings?.babyName || ''}
+                          onChange={(e) => setSettings({...settings, babyName: e.target.value} as AppSettings)}
+                          placeholder="Nome do bebê"
+                          className="max-w-md"
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          Este nome será exibido em toda a aplicação.
+                        </p>
+                      </div>
+                      
+                      {/* Botão para definir data real */}
+                      <div className="pt-1">
+                        <div className="flex flex-col gap-2">
+                          <div className="flex items-center justify-between max-w-md">
+                            <div className="space-y-0.5">
+                              <h4 className="text-sm font-medium">Data de Nascimento</h4>
+                              <p className="text-sm text-muted-foreground">
+                                {settings?.actualBirthDate 
+                                  ? `Definida para ${format(new Date(settings.actualBirthDate.seconds * 1000), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
+                                  : "Ainda não definida"}
+                              </p>
+                            </div>
+                            <Button
+                              onClick={() => {
+                                if (settings?.actualBirthDate) {
+                                  setActualBirthDate(new Date(settings.actualBirthDate.seconds * 1000));
+                                }
+                                setIsOpen(true);
+                              }}
+                              size="sm"
+                              variant="outline"
+                              className="gap-1"
+                            >
+                              {settings?.actualBirthDate ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                              {settings?.actualBirthDate ? "Alterar" : "Definir"}
+                            </Button>
+                          </div>
+                          {settings?.actualBirthDate && (
+                            <div className="flex gap-2 max-w-md mt-1">
+                              <Badge variant="outline" className="bg-primary/10 text-primary text-xs font-normal">
+                                <Trophy className="h-3 w-3 mr-1" />
+                                Vencedor definido
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Seção de Datas Previstas */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-medium">Datas Previstas</h3>
+                      </div>
+                      <Separator className="my-2" />
+                      
+                      {/* Data Prevista de Nascimento */}
+                      <div className="space-y-2">
+                        <Label htmlFor="expectedBirthDate" className="text-sm font-medium">
+                          Data Prevista de Nascimento (DPP)
+                        </Label>
+                        <div className="grid gap-2 max-w-md">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="expectedBirthDate"
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {settings?.expectedBirthDate ? (
+                                  format(
+                                    new Date(settings.expectedBirthDate.seconds * 1000),
+                                    "dd 'de' MMMM 'de' yyyy",
+                                    { locale: ptBR }
+                                  )
+                                ) : (
+                                  <span>Selecione uma data</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={settings?.expectedBirthDate ? new Date(settings.expectedBirthDate.seconds * 1000) : undefined}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    setSettings({
+                                      ...settings,
+                                      expectedBirthDate: Timestamp.fromDate(date)
+                                    } as AppSettings);
+                                  }
+                                }}
+                                locale={ptBR}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Esta é a data estimada pelo médico para o nascimento.
+                        </p>
+                      </div>
+                      
+                      {/* Data da Última Menstruação (DUM) */}
+                      <div className="space-y-2">
+                        <Label htmlFor="lastMenstruationDate" className="text-sm font-medium">
+                          Data da Última Menstruação (DUM) ou último ultrassom
+                        </Label>
+                        <div className="grid gap-2 max-w-md">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                id="lastMenstruationDate"
+                                variant="outline"
+                                className="w-full justify-start text-left font-normal"
+                              >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {settings?.lastMenstruationDate ? (
+                                  format(
+                                    new Date(settings.lastMenstruationDate.seconds * 1000),
+                                    "dd 'de' MMMM 'de' yyyy",
+                                    { locale: ptBR }
+                                  )
+                                ) : (
+                                  <span>Selecione uma data</span>
+                                )}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                              <Calendar
+                                mode="single"
+                                selected={settings?.lastMenstruationDate ? new Date(settings.lastMenstruationDate.seconds * 1000) : undefined}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    setSettings({
+                                      ...settings,
+                                      lastMenstruationDate: Timestamp.fromDate(date)
+                                    } as AppSettings);
+                                  }
+                                }}
+                                locale={ptBR}
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Esta data será usada para calcular a idade gestacional e o countup após o nascimento.
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Seção de Comportamento do Sistema */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Settings2 className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-medium">Comportamento do Sistema</h3>
+                      </div>
+                      <Separator className="my-2" />
+                      
+                      {/* Opções de Comportamento */}
+                      <div className="space-y-4 max-w-md">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="allowGuesses" className="text-sm font-medium">
+                              Permitir novos palpites
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              Quando ativado, os usuários podem criar novos palpites.
+                            </p>
+                          </div>
+                          <Switch
+                            id="allowGuesses"
+                            checked={settings?.allowGuesses || false}
+                            onCheckedChange={(checked) => setSettings({...settings, allowGuesses: checked} as AppSettings)}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label htmlFor="showCountdown" className="text-sm font-medium">
+                              Mostrar contagem regressiva
+                            </Label>
+                            <p className="text-sm text-muted-foreground">
+                              Quando ativado, exibe um contador na página inicial.
+                            </p>
+                          </div>
+                          <Switch
+                            id="showCountdown"
+                            checked={settings?.showCountdown || false}
+                            onCheckedChange={(checked) => setSettings({...settings, showCountdown: checked} as AppSettings)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Botão para salvar configurações */}
+                    <div className="pt-2">
+                      <Card className="bg-primary/5 border-primary/20">
+                        <CardContent className="p-4">
+                          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+                            <div className="space-y-1">
+                              <h4 className="font-medium">Salvar alterações</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Aplique todas as alterações realizadas nas configurações.
+                              </p>
+                            </div>
+                            <Button 
+                              onClick={async () => {
+                                try {
+                                  await updateAppSettings(settings as AppSettings);
+                                  toast.success("Configurações atualizadas com sucesso");
+                                } catch (error) {
+                                  console.error("Erro ao atualizar configurações:", error);
+                                  toast.error("Erro ao atualizar configurações");
+                                }
+                              }}
+                              className="gap-2"
+                            >
+                              <Save className="h-4 w-4" />
+                              Salvar Configurações
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="pending-users" className="mt-0 shadow-none border-none">
+              <Card className="border-none shadow-md">
                 <CardHeader>
                   <CardTitle className="text-xl">Aprovação de Usuários</CardTitle>
                   <CardDescription>
@@ -983,246 +1393,72 @@ export default function AdminPage() {
                       <p className="text-muted-foreground">Não há usuários pendentes de aprovação.</p>
                     </div>
                   ) : (
-                    <Table>
-                      <TableCaption>Lista de usuários aguardando aprovação</TableCaption>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Usuário</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Data de Cadastro</TableHead>
-                          <TableHead>Ações</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingUsers.map((pendingUser) => (
-                          <TableRow key={pendingUser.uid}>
-                            <TableCell className="font-medium">
-                              <div className="flex items-center gap-2">
-                                {pendingUser.photoURL ? (
-                                  <Avatar>
-                                    <AvatarImage src={pendingUser.photoURL} alt={pendingUser.displayName || ''} />
-                                    <AvatarFallback>{pendingUser.displayName?.substring(0, 2) || 'U'}</AvatarFallback>
-                                  </Avatar>
-                                ) : (
-                                  <Avatar>
-                                    <AvatarFallback>{pendingUser.displayName?.substring(0, 2) || 'U'}</AvatarFallback>
-                                  </Avatar>
-                                )}
-                                <div>
-                                  <p>{pendingUser.displayName || 'Sem nome'}</p>
-                                  <p className="text-xs text-muted-foreground">Cadastrado via {pendingUser.authProvider}</p>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{pendingUser.email || '-'}</TableCell>
-                            <TableCell>
-                              {pendingUser.createdAt && pendingUser.createdAt.seconds
-                                ? format(new Date(pendingUser.createdAt.seconds * 1000), 'dd/MM/yyyy HH:mm', { locale: ptBR })
-                                : '-'}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleApproveUser(pendingUser.uid)}
-                                  disabled={processingAction === pendingUser.uid}
-                                >
-                                  {processingAction === pendingUser.uid ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <CheckIcon className="h-4 w-4 mr-1" />
-                                  )}
-                                  Aprovar
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  className="hover:bg-red-100 hover:text-red-700 hover:border-red-700"
-                                  onClick={() => handleRejectUser(pendingUser.uid)}
-                                  disabled={processingAction === pendingUser.uid}
-                                >
-                                  {processingAction === pendingUser.uid ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <X className="h-4 w-4 mr-1" />
-                                  )}
-                                  Rejeitar
-                                </Button>
-                              </div>
-                            </TableCell>
+                    <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+                      <Table>
+                        <TableCaption>Lista de usuários aguardando aprovação</TableCaption>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Usuário</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Data de Solicitação</TableHead>
+                            <TableHead className="text-right">Ações</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                        </TableHeader>
+                        <TableBody>
+                          {pendingUsers.map((pendingUser) => (
+                            <TableRow key={pendingUser.uid}>
+                              <TableCell className="font-medium whitespace-nowrap">
+                                {pendingUser.displayName || 'Usuário sem nome'}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap">{pendingUser.email || '-'}</TableCell>
+                              <TableCell className="whitespace-nowrap">
+                                {pendingUser.createdAt && pendingUser.createdAt.seconds
+                                  ? format(new Date(pendingUser.createdAt.seconds * 1000), 'dd/MM/yyyy', { locale: ptBR })
+                                  : '-'}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleApproveUser(pendingUser.uid)}
+                                    disabled={processingAction === pendingUser.uid}
+                                    className="flex-grow sm:flex-grow-0"
+                                  >
+                                    {processingAction === pendingUser.uid ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <CheckIcon className="h-4 w-4 mr-1" />
+                                    )}
+                                    Aprovar
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    className="hover:bg-red-100 hover:text-red-700 hover:border-red-700 flex-grow sm:flex-grow-0"
+                                    onClick={() => handleRejectUser(pendingUser.uid)}
+                                    disabled={processingAction === pendingUser.uid}
+                                  >
+                                    {processingAction === pendingUser.uid ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <X className="h-4 w-4 mr-1" />
+                                    )}
+                                    Rejeitar
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            {/* Nova aba de Configurações do Sistema */}
-            <TabsContent value="settings">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configurações do Sistema</CardTitle>
-                  <CardDescription>Gerencie as configurações da aplicação</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {/* Nome do Bebê */}
-                    <div className="space-y-2">
-                      <Label htmlFor="babyName">Nome do Bebê</Label>
-                      <div className="flex gap-2">
-                        <input 
-                          type="text" 
-                          id="babyName" 
-                          value={settings?.babyName || ''} 
-                          onChange={(e) => setSettings({...settings, babyName: e.target.value} as AppSettings)}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        />
-                      </div>
-                    </div>
-                    
-                    {/* Data Esperada de Nascimento */}
-                    <div className="space-y-2">
-                      <Label htmlFor="expectedDate">Data Esperada de Nascimento</Label>
-                      <div className="grid gap-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-start text-left font-normal"
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {settings?.expectedBirthDate ? (
-                                format(
-                                  new Date(settings.expectedBirthDate.seconds * 1000),
-                                  "PPP",
-                                  { locale: ptBR }
-                                )
-                              ) : (
-                                <span>Selecione uma data</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={settings?.expectedBirthDate ? new Date(settings.expectedBirthDate.seconds * 1000) : undefined}
-                              onSelect={(date) => {
-                                if (date) {
-                                  setSettings({
-                                    ...settings,
-                                    expectedBirthDate: Timestamp.fromDate(date)
-                                  } as AppSettings);
-                                }
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                    
-                    {/* Data da Última Menstruação (DUM) */}
-                    <div className="space-y-2">
-                      <Label htmlFor="lastMenstruationDate">Data da Última Menstruação (DUM) ou último ultrassom</Label>
-                      <div className="grid gap-2">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="outline"
-                              className="w-full justify-start text-left font-normal"
-                            >
-                              <CalendarIcon className="mr-2 h-4 w-4" />
-                              {settings?.lastMenstruationDate ? (
-                                format(
-                                  new Date(settings.lastMenstruationDate.seconds * 1000),
-                                  "PPP",
-                                  { locale: ptBR }
-                                )
-                              ) : (
-                                <span>Selecione uma data</span>
-                              )}
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0">
-                            <Calendar
-                              mode="single"
-                              selected={settings?.lastMenstruationDate ? new Date(settings.lastMenstruationDate.seconds * 1000) : undefined}
-                              onSelect={(date) => {
-                                if (date) {
-                                  setSettings({
-                                    ...settings,
-                                    lastMenstruationDate: Timestamp.fromDate(date)
-                                  } as AppSettings);
-                                }
-                              }}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Esta data será usada para calcular a idade gestacional e o countup após o nascimento.
-                      </p>
-                    </div>
-                    
-                    {/* Permitir Palpites */}
-                    <div className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        id="allowGuesses" 
-                        checked={settings?.allowGuesses || false}
-                        onChange={(e) => setSettings({...settings, allowGuesses: e.target.checked} as AppSettings)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <Label htmlFor="allowGuesses">Permitir novos palpites</Label>
-                    </div>
-                    
-                    {/* Mostrar Contagem Regressiva */}
-                    <div className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
-                        id="showCountdown" 
-                        checked={settings?.showCountdown || false}
-                        onChange={(e) => setSettings({...settings, showCountdown: e.target.checked} as AppSettings)}
-                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                      />
-                      <Label htmlFor="showCountdown">Mostrar contagem regressiva</Label>
-                    </div>
-                    
-                    {/* Botão para salvar configurações */}
-                    <Button 
-                      onClick={async () => {
-                        try {
-                          await updateAppSettings(settings as AppSettings);
-                          toast.success("Configurações atualizadas com sucesso");
-                        } catch (error) {
-                          console.error("Erro ao atualizar configurações:", error);
-                          toast.error("Erro ao atualizar configurações");
-                        }
-                      }}
-                      className="mt-4"
-                    >
-                      Salvar Configurações
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
 
-          <div className="flex flex-col gap-4 md:flex-row md:justify-between md:items-center mb-6">
-            <h2 className="text-xl font-semibold">Bem-vindo, {userProfile.displayName || user.email}!</h2>
-            <Button 
-              variant="outline" 
-              onClick={() => setIsOpen(true)}
-              disabled={updatingDate}
-            >
-              {settings?.actualBirthDate ? "Alterar data real" : "Definir data real"}
-            </Button>
-          </div>
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
@@ -1283,6 +1519,25 @@ export default function AdminPage() {
                 >
                   Cancelar
                 </Button>
+                {settings?.actualBirthDate && (
+                  <Button
+                    variant="destructive"
+                    onClick={handleRemoveActualBirthDate}
+                    disabled={updatingDate}
+                  >
+                    {updatingDate ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Removendo...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Remover Data
+                      </>
+                    )}
+                  </Button>
+                )}
                 <Button 
                   onClick={handleSetActualBirthDate} 
                   disabled={!actualBirthDate || updatingDate}
@@ -1296,6 +1551,127 @@ export default function AdminPage() {
                     <>
                       <CheckIcon className="mr-2 h-4 w-4" />
                       Confirmar
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={isGuessDialogOpen} onOpenChange={setIsGuessDialogOpen}>
+            <DialogContent className="sm:max-w-[550px]">
+              <DialogHeader>
+                <DialogTitle>Novo Palpite</DialogTitle>
+                <DialogDescription>
+                  Adicione um novo palpite para o nascimento {settings?.babyName ? `da ${settings.babyName}` : ''}.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="userName">Nome do usuário</Label>
+                    <input 
+                      type="text" 
+                      id="userName" 
+                      value={newGuess.userName} 
+                      onChange={(e) => setNewGuess({...newGuess, userName: e.target.value})}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      placeholder="Nome do participante"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="date">Data do palpite</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="date"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !newGuess.date && "text-muted-foreground"
+                          )}
+                        >
+                          {newGuess.date ? (
+                            format(newGuess.date, "dd/MM/yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecione uma data</span>
+                          )}
+                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={newGuess.date}
+                          onSelect={handleDateSelect}
+                          locale={ptBR}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Mostrar quem já selecionou essa data */}
+                    {guessesByDate.length > 0 && (
+                      <div className="mt-3 p-3 bg-secondary/30 rounded-md">
+                        <p className="text-sm font-medium mb-2 text-secondary-foreground">
+                          {guessesByDate.length} {guessesByDate.length === 1 ? 'pessoa já escolheu' : 'pessoas já escolheram'} esta data:
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {guessesByDate.map((guess, index) => (
+                            <Badge 
+                              key={index} 
+                              variant="secondary" 
+                              className="flex items-center gap-1"
+                            >
+                              <span>{guess.userName}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="comment">Comentário</Label>
+                    <textarea 
+                      id="comment" 
+                      value={newGuess.comment} 
+                      onChange={(e) => setNewGuess({...newGuess, comment: e.target.value})}
+                      placeholder="Adicione um comentário (opcional)"
+                      className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsGuessDialogOpen(false);
+                    setNewGuess({
+                      userName: '',
+                      comment: '',
+                      date: undefined
+                    });
+                    setGuessesByDate([]);
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleAddGuess} 
+                  disabled={isCreatingGuess || !newGuess.userName || !newGuess.date}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  {isCreatingGuess ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Criando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckIcon className="mr-2 h-4 w-4" />
+                      Criar Palpite
                     </>
                   )}
                 </Button>
@@ -1347,7 +1723,7 @@ export default function AdminPage() {
                   Escolha o formato para exportar os palpites. O arquivo será nomeado com a data atual para facilitar a identificação.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
                 <Button 
                   variant="outline" 
                   className="h-20"
@@ -1391,7 +1767,7 @@ export default function AdminPage() {
                   O formato deve corresponder à estrutura dos dados de palpite.
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <div className="grid grid-cols-2 gap-4 py-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
                 <Button 
                   variant="outline" 
                   className="h-20"
