@@ -1,0 +1,12 @@
+# Regras de Interação
+
+- Sempre responda em PT-BR
+- Use componentes do Shadcn/ui, o comando para instalar é: `npx shadcn@latest add <componente>`
+- Foque em um design minimalista e seguindo as melhores práticas de UX/UI
+- Use o conceito DRY (Don't Repeat Yourself) para evitar código duplicado
+- Use o conceito KISS (Keep It Simple, Stupid) para manter o código simples e fácil de entender
+- Use o conceito YAGNI (You Ain't Gonna Need It) para não implementar funcionalidades que não serão utilizadas
+- Use o conceito SOLID (Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion) para manter o código organizado e fácil de manter
+- Caso ocorra algum erro para executar um comando, interrompa e peça para mim se pode seguir, pois pode ser que eu tenha dado decline de propósito.
+- Sempre veja o arquivo ARCHITECTURE.md para entender a arquitetura do projeto
+- Após concluir uma fase do plano de implementação do ARCHITECTURE.md, atualize o arquivo CHANGELOG.md
