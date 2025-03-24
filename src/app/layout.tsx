@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./custom-scrollbar.css"; 
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/auth-context";
 import { Navbar } from "@/components/navbar";
@@ -28,7 +29,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased text-foreground min-h-screen bg-gradient-to-b from-white to-slate-50 dark:from-slate-950 dark:to-slate-900`}
       >
         <AuthProvider>
           <Navbar />
