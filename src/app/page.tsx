@@ -8,7 +8,6 @@ import { getAppSettings, getClosestGuess, getNextGuesses } from '@/lib/firebase/
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 import { BirthGuess, AppSettings } from '@/types';
-import { Progress } from '@/components/ui/progress';
 import { Eye, ShieldAlert, CalendarClock } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 
@@ -282,53 +281,58 @@ export default function Home() {
     if (!data) return null;
     
     return (
-      <div className={`${isMain ? 'p-4' : 'p-3'} rounded-lg bg-card border border-border shadow-sm h-full`}>
-        <div className="text-center mb-2">
-          <h3 className={`${isMain ? 'text-xl' : 'text-lg'} font-bold text-primary mb-1`}>
+      <div className={`${isMain ? 'p-5' : 'p-4'} rounded-xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-800 shadow-md hover:shadow-lg transition-all h-full`}>
+        <div className="text-center mb-3">
+          <h3 className={`${isMain ? 'text-2xl' : 'text-xl'} font-bold text-indigo-600 dark:text-indigo-400 mb-1`}>
             {title}
           </h3>
           {subtitle && (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
               {subtitle}
             </p>
           )}
         </div>
         
-        <div className="grid grid-cols-5 gap-1 text-center mb-2">
+        <div className="grid grid-cols-5 gap-2 text-center mb-3">
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{data.weeks}</span>
-            <span className="text-[10px] text-muted-foreground">Sem</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.weeks}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Sem</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{data.days}</span>
-            <span className="text-[10px] text-muted-foreground">Dias</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.days}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Dias</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{data.hours}</span>
-            <span className="text-[10px] text-muted-foreground">Hrs</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.hours}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Hrs</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{data.minutes}</span>
-            <span className="text-[10px] text-muted-foreground">Min</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.minutes}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Min</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{data.seconds}</span>
-            <span className="text-[10px] text-muted-foreground">Seg</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{data.seconds}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Seg</span>
           </div>
         </div>
         
         {'progress' in data && (
-          <div className="space-y-1">
-            <div className="flex justify-between text-xs">
-              <span>Progresso</span>
-              <span>{Math.round(data.progress || 0)}%</span>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm font-medium">
+              <span className="text-slate-700 dark:text-slate-300">Progresso</span>
+              <span className="text-indigo-600 dark:text-indigo-400">{Math.round(data.progress || 0)}%</span>
             </div>
-            <Progress value={data.progress || 0} className={isMain ? "h-2" : "h-1.5"} />
+            <div className="h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
+                style={{ width: `${data.progress || 0}%` }} 
+              />
+            </div>
           </div>
         )}
         
         {'totalDays' in data && (
-          <p className="text-center text-xs text-muted-foreground mt-1">
+          <p className="text-center text-sm text-slate-600 dark:text-slate-400 mt-3 font-medium">
             Total: {data.totalDays} dias ({data.weeks} sem e {data.days} d)
           </p>
         )}
@@ -348,45 +352,50 @@ export default function Home() {
     })}`;
     
     return (
-      <div className={`${isMain ? 'p-4' : 'p-3'} rounded-lg bg-card border border-border shadow-sm h-full`}>
-        <div className="text-center mb-2">
-          <h3 className={`${isMain ? 'text-xl' : 'text-lg'} font-bold text-primary mb-0.5 truncate`}>
+      <div className={`${isMain ? 'p-5' : 'p-4'} rounded-xl bg-gradient-to-br from-white to-slate-50 dark:from-slate-900 dark:to-slate-950 border border-slate-200 dark:border-slate-800 shadow-md hover:shadow-lg transition-all h-full`}>
+        <div className="text-center mb-3">
+          <h3 className={`${isMain ? 'text-2xl' : 'text-xl'} font-bold text-indigo-600 dark:text-indigo-400 mb-1 truncate`}>
             {guess.userName}
           </h3>
-          <p className="text-muted-foreground text-xs">
+          <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">
             {subtitle}
           </p>
         </div>
         
-        <div className="grid grid-cols-5 gap-1 text-center mb-2">
+        <div className="grid grid-cols-5 gap-2 text-center mb-3">
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{countdown.weeks}</span>
-            <span className="text-[10px] text-muted-foreground">Sem</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.weeks}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Sem</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{countdown.days}</span>
-            <span className="text-[10px] text-muted-foreground">Dias</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.days}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Dias</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{countdown.hours}</span>
-            <span className="text-[10px] text-muted-foreground">Hrs</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.hours}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Hrs</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{countdown.minutes}</span>
-            <span className="text-[10px] text-muted-foreground">Min</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.minutes}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Min</span>
           </div>
           <div className="flex flex-col">
-            <span className={`${isMain ? 'text-3xl' : 'text-xl'} font-bold`}>{countdown.seconds}</span>
-            <span className="text-[10px] text-muted-foreground">Seg</span>
+            <span className={`${isMain ? 'text-4xl' : 'text-2xl'} font-bold text-indigo-700 dark:text-indigo-300`}>{countdown.seconds}</span>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">Seg</span>
           </div>
         </div>
         
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs">
-            <span>Progresso</span>
-            <span>{Math.round(countdown.progress)}%</span>
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm font-medium">
+            <span className="text-slate-700 dark:text-slate-300">Progresso</span>
+            <span className="text-indigo-600 dark:text-indigo-400">{Math.round(countdown.progress)}%</span>
           </div>
-          <Progress value={countdown.progress} className={isMain ? "h-2" : "h-1.5"} />
+          <div className="h-2.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
+              style={{ width: `${countdown.progress}%` }} 
+            />
+          </div>
         </div>
       </div>
     );
@@ -475,28 +484,28 @@ export default function Home() {
   const babyBorn = appSettings?.actualBirthDate !== null && appSettings?.actualBirthDate !== undefined;
   
   return (
-    <main className="flex min-h-screen flex-col items-center p-2 pt-6 md:p-8">
-      <header className="mb-4 md:mb-6 text-center">
-        <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-primary mb-1">
+    <main className="flex min-h-screen flex-col items-center p-4 pt-8 md:p-8">
+      <header className="mb-6 md:mb-8 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400 mb-2 animate-fade-in">
           Contador de Palpites
         </h1>
-        <p className="text-base md:text-lg text-muted-foreground">
+        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300">
           Nascimento da {appSettings?.babyName || 'Chloe'}
         </p>
       </header>
 
       {babyBorn ? (
         // Exibição quando o bebê já nasceu
-        <div className="w-full max-w-5xl mx-auto space-y-6">
-          <Card className="w-full bg-primary/5 shadow-sm">
-            <CardHeader className="py-3 px-4">
-              <CardTitle className="text-xl text-center text-primary">
+        <div className="w-full max-w-5xl mx-auto space-y-8">
+          <Card className="w-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 shadow-lg border-indigo-200 dark:border-indigo-800">
+            <CardHeader className="py-4 px-6">
+              <CardTitle className="text-2xl text-center text-indigo-700 dark:text-indigo-400">
                 {appSettings?.babyName || 'Chloe'} já nasceu!
               </CardTitle>
             </CardHeader>
-            <CardContent className="pb-4 px-4">
-              <div className="space-y-4">
-                <p className="text-center font-medium text-sm">
+            <CardContent className="pb-6 px-6">
+              <div className="space-y-6">
+                <p className="text-center font-medium text-base text-slate-700 dark:text-slate-300">
                   Data de nascimento: {appSettings?.actualBirthDate && appSettings.actualBirthDate.seconds ? 
                     new Date(appSettings.actualBirthDate.seconds * 1000).toLocaleDateString('pt-BR', {
                       day: '2-digit',
@@ -507,7 +516,7 @@ export default function Home() {
                 
                 {/* Countup da idade do bebê */}
                 {babyAge && (
-                  <div className="mt-4">
+                  <div className="mt-6">
                     {renderTimeDisplay(
                       babyAge, 
                       `Idade da ${appSettings?.babyName || 'Chloe'}`, 
@@ -518,10 +527,10 @@ export default function Home() {
                 )}
                 
                 {closestGuess?.guess && (
-                  <div className="mt-3 p-4 bg-card rounded-lg shadow-sm">
-                    <h3 className="text-center font-bold text-primary text-lg mb-2">Ganhador do palpite</h3>
-                    <p className="text-center font-medium text-xl">{closestGuess.guess.userName}</p>
-                    <p className="text-center text-muted-foreground text-sm mt-1">
+                  <div className="mt-6 p-6 bg-white dark:bg-slate-900 rounded-xl shadow-md border border-slate-200 dark:border-slate-700">
+                    <h3 className="text-center font-bold text-indigo-600 dark:text-indigo-400 text-xl mb-3">Ganhador do palpite</h3>
+                    <p className="text-center font-bold text-2xl text-slate-900 dark:text-white">{closestGuess.guess.userName}</p>
+                    <p className="text-center text-slate-600 dark:text-slate-400 text-base mt-2">
                       Palpitou: {closestGuess.guess.guessDate && closestGuess.guess.guessDate.seconds ? 
                         new Date(closestGuess.guess.guessDate.seconds * 1000).toLocaleDateString('pt-BR', {
                           day: '2-digit',
@@ -530,8 +539,8 @@ export default function Home() {
                         }) : '-'}
                     </p>
                     {closestGuess.difference && (
-                      <div className="mt-3 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-primary">
+                      <div className="mt-4 text-center">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-300">
                           Diferença: {closestGuess.difference}
                         </span>
                       </div>
@@ -544,12 +553,12 @@ export default function Home() {
         </div>
       ) : (
         // Exibição quando o bebê ainda não nasceu
-        <div className="w-full max-w-6xl mx-auto space-y-4 md:space-y-6">
+        <div className="w-full max-w-6xl mx-auto space-y-6 md:space-y-8">
           {/* Seção superior: Countdown e Idade Gestacional */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
             {/* Countdown para data esperada */}
             {expectedBirthCountdown && (
-              <div>
+              <div className="transform hover:-translate-y-1 transition-transform duration-300">
                 {renderTimeDisplay(
                   expectedBirthCountdown, 
                   "Contagem Regressiva", 
@@ -565,7 +574,7 @@ export default function Home() {
             
             {/* Idade Gestacional (baseada na DUM) */}
             {gestationalAge && appSettings?.lastMenstruationDate && (
-              <div>
+              <div className="transform hover:-translate-y-1 transition-transform duration-300">
                 {renderTimeDisplay(
                   gestationalAge, 
                   "Idade Gestacional", 
@@ -581,19 +590,21 @@ export default function Home() {
           
           {/* Palpite mais próximo em destaque */}
           {closestGuess?.guess && (
-            <div>
-              <h2 className="text-lg font-bold text-center mb-2 text-primary">Palpite Mais Próximo</h2>
-              {renderCountdown(closestGuess.guess, true)}
+            <div className="mt-2">
+              <h2 className="text-xl font-bold text-center mb-4 text-indigo-700 dark:text-indigo-400">Palpite Mais Próximo</h2>
+              <div className="transform hover:-translate-y-1 transition-transform duration-300">
+                {renderCountdown(closestGuess.guess, true)}
+              </div>
             </div>
           )}
           
           {/* Próximos palpites */}
           {nextGuesses.length > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-base font-semibold text-center mb-1 text-primary">Próximos Palpites</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
+            <div className="space-y-4 mt-2">
+              <h2 className="text-lg font-semibold text-center mb-3 text-indigo-700 dark:text-indigo-400">Próximos Palpites</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {nextGuesses.map((guess) => (
-                  <div key={guess.id}>
+                  <div key={guess.id} className="transform hover:-translate-y-1 transition-transform duration-300">
                     {renderCountdown(guess)}
                   </div>
                 ))}
@@ -602,10 +613,14 @@ export default function Home() {
           )}
           
           {/* Botão para ver todos os palpites */}
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-10">
             <Link href="/guesses" passHref>
-              <Button variant="outline" size="lg" className="gap-2">
-                <Eye className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="gap-2 bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 hover:text-indigo-800 dark:hover:text-indigo-300 shadow-md hover:shadow-lg transition-all"
+              >
+                <Eye className="h-5 w-5" />
                 Ver todos os palpites
               </Button>
             </Link>
@@ -613,26 +628,36 @@ export default function Home() {
         </div>
       )}
       
-      <div className="mt-12">
+      <div className="mt-14 mb-8 w-full max-w-md">
         {!user ? (
-          <Card className="w-full max-w-md">
+          <Card className="bg-white dark:bg-slate-900 shadow-lg border-slate-200 dark:border-slate-800">
             <CardHeader className="text-center">
-              <CardTitle className="text-xl">Faça seu palpite</CardTitle>
+              <CardTitle className="text-xl text-indigo-700 dark:text-indigo-400">Faça seu palpite</CardTitle>
             </CardHeader>
             <CardContent className="flex justify-center">
               <Link href="/admin/login" passHref>
-                <Button size="lg">Entrar para participar</Button>
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
+                >
+                  Entrar para participar
+                </Button>
               </Link>
             </CardContent>
           </Card>
         ) : (
-          <Card className="w-full max-w-md">
+          <Card className="bg-white dark:bg-slate-900 shadow-lg border-slate-200 dark:border-slate-800">
             <CardHeader className="text-center">
-              <CardTitle className="text-xl">Gerenciar palpites</CardTitle>
+              <CardTitle className="text-xl text-indigo-700 dark:text-indigo-400">Gerenciar palpites</CardTitle>
             </CardHeader>
             <CardContent className="flex justify-center">
               <Link href="/admin" passHref>
-                <Button size="lg">Acessar área administrativa</Button>
+                <Button 
+                  size="lg"
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
+                >
+                  Acessar área administrativa
+                </Button>
               </Link>
             </CardContent>
           </Card>
