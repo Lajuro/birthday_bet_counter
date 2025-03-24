@@ -1,0 +1,71 @@
+/* Estilos personalizados para a barra de rolagem */
+
+/* Barra de rolagem para navegadores baseados em WebKit (Chrome, Safari, Edge moderno) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1e2e;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3b3b4f;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed; /* Cor roxa ao passar o mouse */
+}
+
+::-webkit-scrollbar-corner {
+  background: #1e1e2e;
+}
+
+/* Para Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3b3b4f #1e1e2e;
+}
+
+/* Para elementos que têm rolagem interna */
+.overflow-auto::-webkit-scrollbar,
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb,
+.overflow-y-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #3b3b4f;
+  border-radius: 6px;
+}
+
+.overflow-auto::-webkit-scrollbar-thumb:hover,
+.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
+}
+
+/* Animações e efeitos para a barra de rolagem */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px rgba(124, 58, 237, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(124, 58, 237, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(124, 58, 237, 0.3);
+  }
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: #9361fb;
+  animation: glow 1.5s infinite;
+}
