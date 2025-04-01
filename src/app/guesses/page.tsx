@@ -17,8 +17,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeftIcon, CalendarIcon, ChatBubbleIcon } from '@radix-ui/react-icons';
+import { ArrowLeftIcon, CalendarIcon, ChatBubbleIcon, PlusIcon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
+import { GuessForm } from '@/components/bets/guess-form';
 
 // Interface para os countdowns calculados
 interface CountdownData {
@@ -38,6 +39,7 @@ export default function GuessesPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [countdowns, setCountdowns] = useState<{[key: string]: CountdownData}>({});
   const [activeView, setActiveView] = useState<'cards' | 'table'>('cards');
+  const [guessFormOpen, setGuessFormOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -106,7 +108,7 @@ export default function GuessesPage() {
     
     return () => clearInterval(timer);
   }, [guesses]);
-  
+
   // Calcular diferenças de dias entre a data de nascimento e os palpites
   const calculateDifference = (guessDate: Date, birthDate: Date) => {
     const diffTime = Math.abs(birthDate.getTime() - guessDate.getTime());
@@ -138,7 +140,7 @@ export default function GuessesPage() {
       setSortDirection('asc');
     }
   };
-  
+
   const renderCountdown = (guess: BirthGuess) => {
     const countdown = countdowns[guess.id];
     if (!countdown) return null;
@@ -183,10 +185,19 @@ export default function GuessesPage() {
       </div>
     );
   };
-  
+
   // Verificar se o bebê já nasceu
   const babyBorn = appSettings?.actualBirthDate !== null && appSettings?.actualBirthDate !== undefined;
-  
+
+  const refreshGuesses = async () => {
+    try {
+      const fetchedGuesses = await getAllGuesses();
+      setGuesses(fetchedGuesses);
+    } catch (error) {
+      console.error('Erro ao atualizar palpites:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-white to-slate-50 dark:from-slate-950 dark:to-slate-900">
@@ -199,40 +210,32 @@ export default function GuessesPage() {
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50 dark:from-slate-950 dark:to-slate-900 py-8 px-4">
       <div className="container mx-auto max-w-7xl">
         <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400 mb-2">
-              Todos os Palpites
-            </h1>
-            <p className="text-slate-600 dark:text-slate-300 text-sm md:text-base">
-              Palpites para o nascimento {appSettings?.babyName ? `da ${appSettings.babyName}` : ''}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 mt-6 md:mt-0">
-            <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'cards' | 'table')} className="mr-2">
-              <TabsList className="grid grid-cols-2 w-[180px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1">
-                <TabsTrigger 
-                  value="cards" 
-                  className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-200"
-                >
-                  Cards
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="table"
-                  className="data-[state=active]:bg-indigo-100 data-[state=active]:text-indigo-800 dark:data-[state=active]:bg-indigo-900 dark:data-[state=active]:text-indigo-200"
-                >
-                  Tabela
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+          <div className="flex items-center mb-4 md:mb-0">
             <Link href="/">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 shadow-sm"
-              >
-                <ArrowLeftIcon className="mr-2 h-4 w-4" /> Voltar
+              <Button variant="ghost" size="icon" className="mr-2">
+                <ArrowLeftIcon className="h-4 w-4" />
               </Button>
             </Link>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              {babyBorn ? 'Resultado dos Palpites' : 'Palpites do Nascimento'}
+            </h1>
+          </div>
+          
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => setGuessFormOpen(true)}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
+            >
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Adicionar Palpite
+            </Button>
+            
+            <Tabs value={activeView} onValueChange={(value) => setActiveView(value as 'cards' | 'table')} className="hidden md:block">
+              <TabsList>
+                <TabsTrigger value="cards">Cartões</TabsTrigger>
+                <TabsTrigger value="table">Tabela</TabsTrigger>
+              </TabsList>
+            </Tabs>
           </div>
         </div>
 
@@ -403,6 +406,12 @@ export default function GuessesPage() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <GuessForm
+        open={guessFormOpen}
+        onOpenChange={setGuessFormOpen}
+        onSuccess={refreshGuesses}
+      />
     </div>
   );
 }

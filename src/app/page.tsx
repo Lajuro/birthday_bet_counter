@@ -4,12 +4,14 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getAppSettings, getClosestGuess, getNextGuesses } from '@/lib/firebase/firestore';
+import { getAppSettings, getClosestGuess, getNextGuesses, getAllGuesses } from '@/lib/firebase/firestore';
 import { useAuth } from '@/contexts/auth-context';
 import { toast } from 'sonner';
 import { BirthGuess, AppSettings } from '@/types';
-import { Eye, ShieldAlert, CalendarClock } from 'lucide-react';
+import { Eye, ShieldAlert, CalendarClock, PlusIcon, InfoIcon, TrophyIcon, UserRound } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
+import { GuessForm } from '@/components/bets/guess-form';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 // Interface para o resultado do getClosestGuess
 interface ClosestGuessResult {
@@ -54,12 +56,13 @@ const defaultAppSettings: AppSettings = {
   lastMenstruationDate: undefined,
   showCountdown: true,
   allowGuesses: true,
+  guessPrice: 10, // Preço padrão de cada palpite em reais
   createdAt: Timestamp.now(),
   updatedAt: Timestamp.now()
 };
 
 export default function Home() {
-  const { user, isLoading } = useAuth();
+  const { isLoading, user } = useAuth();
   const [appSettings, setAppSettings] = useState<AppSettings>(defaultAppSettings);
   const [closestGuess, setClosestGuess] = useState<ClosestGuessResult | null>(null);
   const [nextGuesses, setNextGuesses] = useState<BirthGuess[]>([]);
@@ -69,6 +72,8 @@ export default function Home() {
   const [babyAge, setBabyAge] = useState<BabyAgeData | null>(null);
   const [gestationalAge, setGestationalAge] = useState<BabyAgeData | null>(null);
   const [expectedBirthCountdown, setExpectedBirthCountdown] = useState<CountdownData | null>(null);
+  const [guessFormOpen, setGuessFormOpen] = useState(false);
+  const [totalGuessCount, setTotalGuessCount] = useState(0);
 
   useEffect(() => {
     async function fetchData() {
@@ -90,6 +95,10 @@ export default function Home() {
         if (Array.isArray(nextThreeGuesses)) {
           setNextGuesses(nextThreeGuesses);
         }
+        
+        // Buscar contagem total de palpites
+        const allGuesses = await getAllGuesses();
+        setTotalGuessCount(allGuesses.length);
         
         // Limpar qualquer erro anterior se tudo deu certo
         setError(null);
@@ -117,6 +126,24 @@ export default function Home() {
     fetchData();
   }, []);
 
+  const refreshData = async () => {
+    try {
+      // Buscar palpite mais próximo
+      const closest = await getClosestGuess();
+      if (closest) {
+        setClosestGuess(closest);
+      }
+      
+      // Buscar próximos palpites
+      const nextThreeGuesses = await getNextGuesses(3);
+      if (Array.isArray(nextThreeGuesses)) {
+        setNextGuesses(nextThreeGuesses);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
+    }
+  };
+
   // Calcular countdown para cada palpite e idade do bebê (countup) se já nasceu
   useEffect(() => {
     if (!appSettings) return;
@@ -124,6 +151,16 @@ export default function Home() {
     const calculateTimeLeft = () => {
       const now = new Date();
       const newCountdowns: {[key: string]: CountdownData} = {};
+      
+      // Verificar se temos a data da última menstruação com todas as propriedades necessárias
+      const hasDUM = appSettings?.lastMenstruationDate !== undefined && 
+                    appSettings?.lastMenstruationDate !== null && 
+                    typeof appSettings?.lastMenstruationDate?.seconds === 'number';
+      
+      // Só acessar a propriedade seconds se tivermos certeza que ela existe
+      const dumDate = hasDUM && appSettings?.lastMenstruationDate?.seconds 
+          ? new Date(appSettings.lastMenstruationDate.seconds * 1000) 
+          : null;
       
       // Calcular countdown para a data esperada de nascimento
       if (appSettings.expectedBirthDate && appSettings.expectedBirthDate.seconds && !appSettings.actualBirthDate) {
@@ -133,12 +170,22 @@ export default function Home() {
         if (difference <= 0) {
           setExpectedBirthCountdown({ weeks: 0, days: 0, hours: 0, minutes: 0, seconds: 0, progress: 100 });
         } else {
-          // Calcular progresso
-          const totalWaitDuration = 280 * 24 * 60 * 60 * 1000; // gestação média em ms
-          const startDate = new Date(expectedDate.getTime() - totalWaitDuration);
-          const totalDuration = expectedDate.getTime() - startDate.getTime();
-          const elapsed = now.getTime() - startDate.getTime();
-          const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+          // Calcular progresso - usando DUM como data inicial
+          let progress = 0;
+          
+          if (hasDUM && dumDate) {
+            // Usar a DUM real como data de início
+            const totalDuration = expectedDate.getTime() - dumDate.getTime();
+            const elapsed = now.getTime() - dumDate.getTime();
+            progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+          } else {
+            // Fallback para o método anterior caso não tenha DUM
+            const totalWaitDuration = 280 * 24 * 60 * 60 * 1000; // gestação média em ms
+            const startDate = new Date(expectedDate.getTime() - totalWaitDuration);
+            const totalDuration = expectedDate.getTime() - startDate.getTime();
+            const elapsed = now.getTime() - startDate.getTime();
+            progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+          }
           
           // Calcular tempo restante
           const totalDays = Math.floor(difference / (1000 * 60 * 60 * 24));
@@ -174,8 +221,7 @@ export default function Home() {
       }
       
       // Calcular idade gestacional com base na DUM (lastMenstruationDate)
-      if (appSettings.lastMenstruationDate && appSettings.lastMenstruationDate.seconds) {
-        const dumDate = new Date(appSettings.lastMenstruationDate.seconds * 1000);
+      if (hasDUM && dumDate) {
         const difference = now.getTime() - dumDate.getTime();
         
         if (difference > 0) {
@@ -186,9 +232,18 @@ export default function Home() {
           const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
           const seconds = Math.floor((difference % (1000 * 60)) / 1000);
           
-          // Calcular o progresso da idade gestacional (considerando 40 semanas como 100%)
-          const gestacaoCompleta = 40 * 7; // 40 semanas em dias
-          const progress = Math.min(100, (totalDays / gestacaoCompleta) * 100);
+          // Calcular o progresso da idade gestacional usando a DUM até a data prevista
+          let progress = 0;
+          
+          if (appSettings.expectedBirthDate && appSettings.expectedBirthDate.seconds) {
+            const expectedDate = new Date(appSettings.expectedBirthDate.seconds * 1000);
+            const totalDuration = expectedDate.getTime() - dumDate.getTime();
+            progress = Math.min(100, Math.max(0, (difference / totalDuration) * 100));
+          } else {
+            // Fallback para método anterior se não tiver data prevista
+            const gestacaoCompleta = 40 * 7; // 40 semanas em dias
+            progress = Math.min(100, (totalDays / gestacaoCompleta) * 100);
+          }
           
           setGestationalAge({ weeks, days, hours, minutes, seconds, totalDays, progress });
         }
@@ -205,12 +260,22 @@ export default function Home() {
           if (difference <= 0) {
             newCountdowns[closestGuess.guess.id] = { weeks: 0, days: 0, hours: 0, minutes: 0, seconds: 0, progress: 100 };
           } else {
-            // Calcular progresso (considerando que o período total de espera é de 280 dias = 40 semanas)
-            const totalWaitDuration = 280 * 24 * 60 * 60 * 1000; // gestação média em ms
-            const startDate = new Date(targetDate.getTime() - totalWaitDuration);
-            const totalDuration = targetDate.getTime() - startDate.getTime();
-            const elapsed = now.getTime() - startDate.getTime();
-            const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            // Calcular progresso usando a DUM como data inicial
+            let progress = 0;
+            
+            if (hasDUM && dumDate) {
+              // Usar a DUM real como data de início
+              const totalDuration = targetDate.getTime() - dumDate.getTime();
+              const elapsed = now.getTime() - dumDate.getTime();
+              progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            } else {
+              // Fallback para o método anterior caso não tenha DUM
+              const totalWaitDuration = 280 * 24 * 60 * 60 * 1000; // gestação média em ms
+              const startDate = new Date(targetDate.getTime() - totalWaitDuration);
+              const totalDuration = targetDate.getTime() - startDate.getTime();
+              const elapsed = now.getTime() - startDate.getTime();
+              progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            }
             
             // Calcular tempo restante
             const totalDays = Math.floor(difference / (1000 * 60 * 60 * 24));
@@ -242,12 +307,22 @@ export default function Home() {
           if (difference <= 0) {
             newCountdowns[guess.id] = { weeks: 0, days: 0, hours: 0, minutes: 0, seconds: 0, progress: 100 };
           } else {
-            // Calcular progresso
-            const totalWaitDuration = 280 * 24 * 60 * 60 * 1000; // gestação média em ms
-            const startDate = new Date(targetDate.getTime() - totalWaitDuration);
-            const totalDuration = targetDate.getTime() - startDate.getTime();
-            const elapsed = now.getTime() - startDate.getTime();
-            const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            // Calcular progresso usando a DUM como data inicial
+            let progress = 0;
+            
+            if (hasDUM && dumDate) {
+              // Usar a DUM real como data de início
+              const totalDuration = targetDate.getTime() - dumDate.getTime();
+              const elapsed = now.getTime() - dumDate.getTime();
+              progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            } else {
+              // Fallback para o método anterior caso não tenha DUM
+              const totalWaitDuration = 280 * 24 * 60 * 60 * 1000; // gestação média em ms
+              const startDate = new Date(targetDate.getTime() - totalWaitDuration);
+              const totalDuration = targetDate.getTime() - startDate.getTime();
+              const elapsed = now.getTime() - startDate.getTime();
+              progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+            }
             
             // Calcular tempo restante
             const totalDays = Math.floor(difference / (1000 * 60 * 60 * 24));
@@ -451,7 +526,7 @@ export default function Home() {
     
     // Definir gradiente de fundo para o card principal (palpite mais próximo)
     const bgGradient = isMain 
-      ? "bg-gradient-to-br from-white to-indigo-50 dark:from-slate-900 dark:to-indigo-950/30" 
+      ? "bg-gradient-to-br from-white to-indigo-50 dark:from-indigo-950/50 dark:to-indigo-950/50" 
       : "bg-white dark:bg-slate-900";
     
     return (
@@ -577,7 +652,7 @@ export default function Home() {
             <CardTitle className="text-xl">Ainda não há palpites</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-center text-muted-foreground">
+            <p className="text-center font-medium text-base text-slate-700 dark:text-slate-300">
               {error === 'erro_geral' 
                 ? 'Não foi possível carregar os dados dos palpites. Por favor, tente novamente mais tarde.'
                 : 'Seja o primeiro a registrar um palpite para o nascimento da Chloe!'}
@@ -599,10 +674,25 @@ export default function Home() {
     );
   }
 
-  const babyBorn = appSettings?.actualBirthDate !== null && appSettings?.actualBirthDate !== undefined;
+  const babyBorn = appSettings?.actualBirthDate !== undefined && appSettings?.actualBirthDate !== null;
   
+  const allowGuesses = !babyBorn && appSettings?.allowGuesses !== false;
+
   return (
-    <main className="flex min-h-screen flex-col items-center p-4 pt-8 md:p-8">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col">
+      {/* Botão fixo para adicionar palpite */}
+      {allowGuesses && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <Button 
+            onClick={() => setGuessFormOpen(true)}
+            className="rounded-full w-14 h-14 shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 cursor-pointer"
+            size="icon"
+          >
+            <PlusIcon className="h-6 w-6" />
+          </Button>
+        </div>
+      )}
+
       <header className="mb-6 md:mb-8 text-center">
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400 mb-2 animate-fade-in">
           Contador de Palpites
@@ -610,6 +700,59 @@ export default function Home() {
         <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300">
           Nascimento da {appSettings?.babyName || 'Chloe'}
         </p>
+
+        {/* Componente para exibir o valor total do prêmio */}
+        {(closestGuess?.guess || nextGuesses.length > 0) && (
+          <div className="mt-4 relative mx-auto max-w-xs">
+            <Popover>
+              <PopoverTrigger asChild>
+                <div className="bg-gradient-to-r from-amber-400/90 to-yellow-500/90 dark:from-amber-500/80 dark:to-yellow-600/80 rounded-lg px-4 py-3 shadow-lg border border-amber-300 dark:border-amber-700/50 transform hover:scale-105 transition-transform cursor-pointer">
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm font-semibold text-amber-900 dark:text-amber-100">Prêmio Total</span>
+                      <InfoIcon className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300 animate-pulse" />
+                    </div>
+                    <div className="flex items-baseline">
+                      <span className="text-2xl md:text-3xl font-bold text-amber-900 dark:text-white">
+                        R$ {(totalGuessCount * (appSettings?.guessPrice || 10)).toFixed(2).replace('.', ',')}
+                      </span>
+                      <span className="ml-1 text-xs font-medium text-amber-800 dark:text-amber-200">,00</span>
+                    </div>
+                    <p className="text-xs text-amber-800/90 dark:text-amber-200/90 mt-1">
+                      {totalGuessCount} palpites x R$ {(appSettings?.guessPrice || 10).toFixed(2).replace('.', ',')}
+                    </p>
+                  </div>
+                  
+                  {/* Efeito de brilho/destaque */}
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-yellow-400 to-amber-300 dark:from-yellow-600 dark:to-amber-500 rounded-lg blur-sm opacity-50 animate-pulse"></div>
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 bg-white dark:bg-slate-900 p-4 shadow-xl border border-amber-200 dark:border-amber-800/30">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <TrophyIcon className="h-5 w-5 text-amber-500" />
+                    <h3 className="font-medium text-amber-800 dark:text-amber-400">Regras do Prêmio</h3>
+                  </div>
+                  <ul className="text-sm space-y-2 text-slate-700 dark:text-slate-300">
+                    <li className="flex gap-2">
+                      <span className="text-amber-600 dark:text-amber-500 font-bold">•</span>
+                      <span>Se alguém acertar <strong>sozinho</strong> a data exata do nascimento, leva <strong>todo o prêmio</strong>.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-amber-600 dark:text-amber-500 font-bold">•</span>
+                      <span>Se <strong>várias pessoas</strong> acertarem a mesma data, o prêmio será <strong>dividido igualmente</strong> entre elas.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-amber-600 dark:text-amber-500 font-bold">•</span>
+                      <span>Se <strong>ninguém acertar</strong> a data exata, o prêmio será guardado para a <strong>bebê</strong>.</span>
+                    </li>
+                  </ul>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 italic">Clique fora para fechar</p>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </header>
 
       {babyBorn ? (
@@ -680,11 +823,12 @@ export default function Home() {
               <div className="transform transition-all duration-300 h-full">
                 {renderTimeDisplay(
                   expectedBirthCountdown, 
-                  "Contagem Regressiva", 
+                  "Data Provável de Nascimento", 
                   `Nascimento: ${appSettings?.expectedBirthDate ? 
                     new Date(appSettings.expectedBirthDate.seconds * 1000).toLocaleDateString('pt-BR', {
                       day: '2-digit',
-                      month: '2-digit'
+                      month: '2-digit',
+                      year: 'numeric',
                     }) : 'Não definida'}`,
                   false,
                   'countdown'
@@ -743,55 +887,41 @@ export default function Home() {
           
           {/* Botão para ver todos os palpites */}
           <div className="flex justify-center mt-10">
-            <Link href="/guesses" passHref>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="gap-2 bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/50 hover:text-indigo-800 dark:hover:text-indigo-300 shadow-md hover:shadow-lg transition-all"
-              >
-                <Eye className="h-5 w-5" />
+            <Link href="/guesses">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white cursor-pointer">
+                <Eye className="mr-2 h-4 w-4" />
                 Ver todos os palpites
               </Button>
             </Link>
+            
+            {user && (
+              <Link href="/my-guesses" className="ml-3">
+                <Button variant="outline" className="border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 cursor-pointer">
+                  <UserRound className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                  Meus Palpites
+                </Button>
+              </Link>
+            )}
+            
+            {allowGuesses && (
+              <Button 
+                className="ml-3 bg-purple-600 hover:bg-purple-700 cursor-pointer"
+                onClick={() => setGuessFormOpen(true)}
+              >
+                <PlusIcon className="mr-2 h-4 w-4" />
+                Adicionar Palpite
+              </Button>
+            )}
           </div>
         </div>
       )}
       
-      <div className="mt-14 mb-8 w-full max-w-md">
-        {!user ? (
-          <Card className="bg-white dark:bg-slate-900 shadow-lg border-slate-200 dark:border-slate-800">
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl text-indigo-700 dark:text-indigo-400">Faça seu palpite</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <Link href="/admin/login" passHref>
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
-                >
-                  Entrar para participar
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="bg-white dark:bg-slate-900 shadow-lg border-slate-200 dark:border-slate-800">
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl text-indigo-700 dark:text-indigo-400">Gerenciar palpites</CardTitle>
-            </CardHeader>
-            <CardContent className="flex justify-center">
-              <Link href="/admin" passHref>
-                <Button 
-                  size="lg"
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md hover:shadow-lg transition-all"
-                >
-                  Acessar área administrativa
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      {/* Modal de palpite */}
+      <GuessForm
+        open={guessFormOpen}
+        onOpenChange={setGuessFormOpen}
+        onSuccess={refreshData}
+      />
     </main>
   );
 }

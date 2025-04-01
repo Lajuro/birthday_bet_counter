@@ -76,24 +76,68 @@ export const getUserGuesses = async (userId: string): Promise<BirthGuess[]> => {
 // Criar novo palpite
 export const createGuess = async (guess: Omit<BirthGuess, 'id' | 'createdAt' | 'updatedAt'>): Promise<BirthGuess | null> => {
   try {
-    // Verificar se o usuário já possui um palpite
-    const existingGuesses = await getUserGuesses(guess.userId);
+    // Verificar se já existe um palpite com o mesmo nome de usuário para a mesma data
+    // Converter a data do palpite atual para um objeto Date para comparação
+    const currentGuessDate = guess.guessDate instanceof Timestamp 
+      ? new Date(guess.guessDate.seconds * 1000) 
+      : new Date();
     
-    if (existingGuesses.length > 0) {
-      throw new Error('Usuário já possui um palpite registrado');
+    // Formatar a data como string YYYY-MM-DD para comparar apenas a data (sem horas)
+    const currentGuessDateString = 
+      `${currentGuessDate.getFullYear()}-${String(currentGuessDate.getMonth() + 1).padStart(2, '0')}-${String(currentGuessDate.getDate()).padStart(2, '0')}`;
+      
+    // Buscar todos os palpites
+    const guessesRef = collection(db, 'guesses');
+    const guessesSnapshot = await getDocs(guessesRef);
+    const allGuesses = guessesSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }) as BirthGuess);
+    
+    // Verificar se já existe um palpite com o mesmo nome de usuário para a mesma data
+    const hasSameNameAndDateGuess = allGuesses.some(existingGuess => {
+      // Verificar se o nome do usuário é o mesmo (case insensitive)
+      const sameUserName = existingGuess.userName.toLowerCase() === guess.userName.toLowerCase();
+      
+      if (!sameUserName) return false;
+      
+      // Verificar se a data é a mesma
+      const existingDate = new Date(existingGuess.guessDate.seconds * 1000);
+      const existingDateString = 
+        `${existingDate.getFullYear()}-${String(existingDate.getMonth() + 1).padStart(2, '0')}-${String(existingDate.getDate()).padStart(2, '0')}`;
+      
+      return existingDateString === currentGuessDateString;
+    });
+    
+    if (hasSameNameAndDateGuess) {
+      throw new Error(`Já existe um palpite registrado para ${guess.userName} nesta data`);
     }
+
+    // Remover campos undefined do objeto guess
+    const cleanGuess = Object.entries(guess).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, unknown>);
     
     const guessData = {
-      ...guess,
+      ...cleanGuess,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
     
     const docRef = await addDoc(collection(db, 'guesses'), guessData);
     
+    // Retornar o objeto completo com as propriedades necessárias
     return {
       id: docRef.id,
-      ...guess,
+      userId: guess.userId,
+      userName: guess.userName,
+      guessDate: guess.guessDate,
+      weight: cleanGuess.weight as number | undefined,
+      height: cleanGuess.height as number | undefined,
+      comment: cleanGuess.comment as string | undefined,
       createdAt: guessData.createdAt as unknown as Timestamp,
       updatedAt: guessData.updatedAt as unknown as Timestamp
     };
@@ -106,17 +150,31 @@ export const createGuess = async (guess: Omit<BirthGuess, 'id' | 'createdAt' | '
 // Criar palpite em massa (permite múltiplos palpites do mesmo usuário)
 export const createBulkGuess = async (guess: Omit<BirthGuess, 'id' | 'createdAt' | 'updatedAt'>): Promise<BirthGuess | null> => {
   try {
+    // Remover campos undefined do objeto guess
+    const cleanGuess = Object.entries(guess).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {} as Record<string, unknown>);
+
     const guessData = {
-      ...guess,
+      ...cleanGuess,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
     
     const docRef = await addDoc(collection(db, 'guesses'), guessData);
     
+    // Garantir que o objeto retornado tenha todas as propriedades necessárias de BirthGuess
     return {
       id: docRef.id,
-      ...guess,
+      userId: guess.userId,
+      userName: guess.userName,
+      guessDate: guess.guessDate,
+      weight: cleanGuess.weight as number | undefined,
+      height: cleanGuess.height as number | undefined,
+      comment: cleanGuess.comment as string | undefined,
       createdAt: guessData.createdAt as unknown as Timestamp,
       updatedAt: guessData.updatedAt as unknown as Timestamp
     };
@@ -270,6 +328,7 @@ export const getAppSettings = async (): Promise<AppSettings | null> => {
       actualBirthDate: undefined,
       showCountdown: true,
       allowGuesses: true,
+      guessPrice: 10, // Valor padrão do palpite: R$ 10,00
       createdAt: Timestamp.now(),
       updatedAt: Timestamp.now()
     };

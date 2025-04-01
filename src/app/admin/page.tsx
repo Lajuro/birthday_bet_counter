@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,9 +28,32 @@ import {
   Trophy,
   BarChart3,
   XCircle,
-  X
+  X,
+  CreditCard,
+  PhoneIcon,
+  Search,
+  MessageCircle,
+  ArrowUpIcon,
+  ArrowDownIcon
 } from 'lucide-react';
-import { getAllGuesses, getAppSettings, updateAppSettings, deleteGuess, deleteManyGuesses, getAllUsers, updateUserProfile, determineWinner, WinnerResult, getPendingUsers, approveUser, rejectUser, createBulkGuess, serverTimestamp } from '@/lib/firebase/firestore';
+import { 
+  createGuess, 
+  createBulkGuess, 
+  getAllGuesses, 
+  getAppSettings, 
+  getAllUsers, 
+  updateUserProfile,
+  updateGuess,
+  deleteGuess as deleteGuessFunc,
+  deleteManyGuesses,
+  approveUser,
+  rejectUser,
+  updateAppSettings,
+  determineWinner,
+  WinnerResult,
+  getPendingUsers,
+  serverTimestamp
+} from '@/lib/firebase/firestore';
 import { BirthGuess, AppSettings, UserProfile } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,43 +89,60 @@ import { db } from '@/lib/firebase/config';
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu';
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
 
 export default function AdminPage() {
   const { user, userProfile, isLoading } = useAuth();
   const router = useRouter();
   const [guesses, setGuesses] = useState<BirthGuess[]>([]);
+  const [selectedGuesses, setSelectedGuesses] = useState<string[]>([]);
+  const [lastCheckedIndex, setLastCheckedIndex] = useState<number | null>(null);
+  const [selectedGuess, setSelectedGuess] = useState<BirthGuess | null>(null);
+  const [deletingGuess, setDeletingGuess] = useState<string | null>(null);
+  const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [pendingUsers, setPendingUsers] = useState<UserProfile[]>([]);
   const [settings, setSettings] = useState<AppSettings | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_isEditingSettings, _setIsEditingSettings] = useState(false);
+  const [_isUpdatingSettings, _setIsUpdatingSettings] = useState(false);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [processingAction, setProcessingAction] = useState<string | null>(null);
+  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [_activeTab, _setActiveTab] = useState("guesses");
+  const [sortConfig, setSortConfig] = useState<{
+    key: keyof BirthGuess | null;
+    direction: 'ascending' | 'descending';
+  }>({ key: 'guessDate', direction: 'ascending' });
+  const [filterConfig, setFilterConfig] = useState<{
+    dateRange: { from?: Date; to?: Date } | null;
+    showWithComments: boolean | null;
+  }>({ dateRange: null, showWithComments: null });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredGuesses, setFilteredGuesses] = useState<BirthGuess[]>([]);
+  const [winnerResult, setWinnerResult] = useState<WinnerResult | null>(null);
+  const [showWinnerResult, setShowWinnerResult] = useState(false);
+  const [_loading, _setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
-  const [updatingDate, setUpdatingDate] = useState(false);
-  const [actualBirthDate, setActualBirthDate] = useState<Date | undefined>(undefined);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isGuessDialogOpen, setIsGuessDialogOpen] = useState(false);
-  const [newGuess, setNewGuess] = useState<{
-    userName: string;
-    comment: string;
-    date: Date | undefined;
-  }>({
-    userName: '',
-    comment: '',
-    date: undefined
-  });
-  const [guessesByDate, setGuessesByDate] = useState<BirthGuess[]>([]);
   const [isCreatingGuess, setIsCreatingGuess] = useState(false);
-  const [addingBulkGuesses, setAddingBulkGuesses] = useState(false);
-  const [currentGuessInfo, setCurrentGuessInfo] = useState<{index: number, total: number, name: string} | null>(null);
-  const [showWinnerResult, setShowWinnerResult] = useState(false);
-  const [selectedGuesses, setSelectedGuesses] = useState<string[]>([]);
-  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
-  const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
-  const [lastCheckedIndex, setLastCheckedIndex] = useState<number | null>(null);
-  const [processingAction, setProcessingAction] = useState<string | null>(null);
-  const [deletingGuess, setDeletingGuess] = useState<string | null>(null);
-  const [winnerResult, setWinnerResult] = useState<WinnerResult | null>(null);
-  const [updatingUser, setUpdatingUser] = useState<string | null>(null);
+  const [_updatingDate, _setUpdatingDate] = useState(false);
+  const [actualBirthDate, setActualBirthDate] = useState<Date | undefined>(undefined);
+  const [newGuess, setNewGuess] = useState({ userName: '', comment: '', date: undefined as Date | undefined });
+  const [_addingBulkGuesses, _setAddingBulkGuesses] = useState(false);
+  const [_currentGuessInfo, _setCurrentGuessInfo] = useState<{index: number, total: number, name: string} | null>(null);
+  const [isImportingFile, setIsImportingFile] = useState(false);
+  const [importProgress, setImportProgress] = useState<{
+    current: number;
+    total: number;
+    currentName: string;
+    completed: boolean;
+    success: number;
+    errors: number;
+  }>({ current: 0, total: 0, currentName: '', completed: false, success: 0, errors: 0 });
 
   useEffect(() => {
     async function fetchData() {
@@ -140,7 +182,6 @@ export default function AdminPage() {
             description: "Não foi possível carregar as informações. Tente novamente mais tarde."
           });
         } finally {
-          setLoading(false);
         }
       }
     }
@@ -148,10 +189,94 @@ export default function AdminPage() {
     fetchData();
   }, [user, userProfile, isLoading, router]);
 
+  useEffect(() => {
+    if (!guesses.length) {
+      setFilteredGuesses([]);
+      return;
+    }
+
+    let result = [...guesses];
+    
+    // Filtragem por termo de pesquisa
+    if (searchTerm.trim()) {
+      const searchTermLower = searchTerm.trim().toLowerCase();
+      result = result.filter(guess => 
+        guess.userName.toLowerCase().includes(searchTermLower) || 
+        (guess.comment && guess.comment.toLowerCase().includes(searchTermLower))
+      );
+    }
+    
+    // Filtragem por intervalo de datas
+    if (filterConfig.dateRange && (filterConfig.dateRange.from || filterConfig.dateRange.to)) {
+      result = result.filter(guess => {
+        if (!guess.guessDate) return false;
+        
+        const guessDate = new Date(guess.guessDate.seconds * 1000);
+        let include = true;
+        
+        if (filterConfig.dateRange?.from) {
+          const fromDate = new Date(filterConfig.dateRange.from);
+          fromDate.setHours(0, 0, 0, 0);
+          include = include && guessDate >= fromDate;
+        }
+        
+        if (filterConfig.dateRange?.to) {
+          const toDate = new Date(filterConfig.dateRange.to);
+          toDate.setHours(23, 59, 59, 999);
+          include = include && guessDate <= toDate;
+        }
+        
+        return include;
+      });
+    }
+    
+    // Filtragem por presença de comentários
+    if (filterConfig.showWithComments !== null) {
+      if (filterConfig.showWithComments) {
+        // Mostrar apenas com comentários
+        result = result.filter(guess => guess.comment && guess.comment.trim().length > 0);
+      } else {
+        // Mostrar apenas sem comentários
+        result = result.filter(guess => !guess.comment || guess.comment.trim().length === 0);
+      }
+    }
+    
+    // Aplicar ordenação
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        // Tratamento especial para ordenação de data
+        if (sortConfig.key === 'guessDate') {
+          // Verificar se os objetos têm a propriedade guessDate
+          if (!a.guessDate || !b.guessDate) {
+            return 0; // Manter a ordem se algum não tiver data
+          }
+          
+          const dateA = new Date(a.guessDate.seconds * 1000);
+          const dateB = new Date(b.guessDate.seconds * 1000);
+          
+          return sortConfig.direction === 'ascending' 
+            ? dateA.getTime() - dateB.getTime()
+            : dateB.getTime() - dateA.getTime();
+        } else if (sortConfig.key === 'userName' || sortConfig.key === 'comment') {
+          // Ordenação de texto (case insensitive)
+          const valueA = (a[sortConfig.key] || '').toLowerCase();
+          const valueB = (b[sortConfig.key] || '').toLowerCase();
+          
+          return sortConfig.direction === 'ascending'
+            ? valueA.localeCompare(valueB)
+            : valueB.localeCompare(valueA);
+        }
+        
+        return 0;
+      });
+    }
+    
+    setFilteredGuesses(result);
+  }, [guesses, sortConfig, filterConfig, searchTerm]);
+
   const handleSetActualBirthDate = async () => {
     if (!actualBirthDate || !settings) return;
 
-    setUpdatingDate(true);
     setShowWinnerResult(false);
     
     try {
@@ -175,14 +300,12 @@ export default function AdminPage() {
       console.error('Erro ao atualizar data de nascimento:', error);
       toast.error('Erro ao atualizar data de nascimento.');
     } finally {
-      setUpdatingDate(false);
     }
   };
 
   const handleRemoveActualBirthDate = async () => {
     if (!settings) return;
     
-    setUpdatingDate(true);
     setShowWinnerResult(false);
     
     try {
@@ -213,14 +336,13 @@ export default function AdminPage() {
       console.error('Erro ao remover data de nascimento:', error);
       toast.error('Erro ao remover data de nascimento.');
     } finally {
-      setUpdatingDate(false);
     }
   };
 
   const handleDeleteGuess = async (guessId: string) => {
     setDeletingGuess(guessId);
     try {
-      await deleteGuess(guessId);
+      await deleteGuessFunc(guessId);
       toast.success("Palpite excluído com sucesso");
       
       // Atualizar a lista de palpites
@@ -338,20 +460,18 @@ export default function AdminPage() {
   
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>, format: 'csv' | 'json') => {
     if (!user || !event.target.files || event.target.files.length === 0) {
-      setAddingBulkGuesses(false);
       return;
     }
 
     const file = event.target.files[0];
-    setAddingBulkGuesses(true);
-    setCurrentGuessInfo({ index: 0, total: 1, name: "Analisando arquivo..." });
+    setIsImportingFile(true);
     
     const reader = new FileReader();
 
     reader.onload = async (e) => {
       if (!e.target?.result) {
         toast.error("Erro ao ler o arquivo");
-        setAddingBulkGuesses(false);
+        setIsImportingFile(false);
         return;
       }
 
@@ -361,7 +481,6 @@ export default function AdminPage() {
         if (format === 'csv') {
           // Processar CSV
           const content = e.target.result as string;
-          console.log("Conteúdo CSV recebido:", content.substring(0, 200) + "...");
           const lines = content.split('\n');
           
           if (lines.length > 1) {
@@ -369,8 +488,6 @@ export default function AdminPage() {
             const headers = lines[0].split(',').map(h => 
               h.trim().replace(/^"(.*)"$/, '$1').toLowerCase() // Remover aspas e converter para minúsculo
             );
-            
-            console.log("Headers identificados:", headers);
             
             for (let i = 1; i < lines.length; i++) {
               if (!lines[i].trim()) continue;
@@ -419,7 +536,6 @@ export default function AdminPage() {
               
               if (guessObj.name && guessObj.date) {
                 guessesToAdd.push(guessObj);
-                console.log(`Palpite CSV processado: ${guessObj.name}, ${guessObj.date}`);
               }
             }
           }
@@ -427,11 +543,9 @@ export default function AdminPage() {
           // Processar JSON
           try {
             const content = e.target.result as string;
-            console.log("Conteúdo JSON recebido:", content.substring(0, 200) + "...");
             const jsonData = JSON.parse(content);
             
             if (Array.isArray(jsonData)) {
-              console.log(`Dados JSON contêm um array com ${jsonData.length} itens`);
               guessesToAdd = jsonData.map(item => {
                 const processedItem = {
                   name: item.userName || item.name || '',
@@ -439,11 +553,9 @@ export default function AdminPage() {
                   relation: item.relation || undefined,
                   comment: item.comment || undefined
                 };
-                console.log(`Processando item JSON: ${processedItem.name}, ${processedItem.date}`);
                 return processedItem;
               }).filter(item => item.name && item.date);
             } else if (typeof jsonData === 'object' && jsonData !== null) {
-              console.log("Dados JSON contêm um único objeto");
               const singleItem = {
                 name: jsonData.userName || jsonData.name || '',
                 date: jsonData.date || '',
@@ -453,24 +565,31 @@ export default function AdminPage() {
               
               if (singleItem.name && singleItem.date) {
                 guessesToAdd = [singleItem];
-                console.log(`Processando único item JSON: ${singleItem.name}, ${singleItem.date}`);
               }
             }
           } catch (jsonError) {
             console.error("Erro ao processar JSON:", jsonError);
             toast.error("Formato de JSON inválido");
-            setAddingBulkGuesses(false);
+            setIsImportingFile(false);
             return;
           }
         }
         
-        console.log(`Total de palpites a adicionar: ${guessesToAdd.length}`);
-        
         if (guessesToAdd.length === 0) {
           toast.error("Nenhum palpite válido encontrado no arquivo");
-          setAddingBulkGuesses(false);
+          setIsImportingFile(false);
           return;
         }
+
+        // Inicializar progresso
+        setImportProgress({
+          current: 0,
+          total: guessesToAdd.length,
+          currentName: '',
+          completed: false,
+          success: 0,
+          errors: 0
+        });
 
         let successCount = 0;
         let errorCount = 0;
@@ -479,12 +598,12 @@ export default function AdminPage() {
         for (let i = 0; i < guessesToAdd.length; i++) {
           const guess = guessesToAdd[i];
           
-          // Atualizar informação de progresso
-          setCurrentGuessInfo({
-            index: i,
-            total: guessesToAdd.length,
-            name: guess.name
-          });
+          // Atualizar progresso
+          setImportProgress(prev => ({
+            ...prev,
+            current: i + 1,
+            currentName: guess.name
+          }));
           
           // Extrair data e hora do formato DD/MM ou DD/MM/YYYY
           let guessDate = new Date();
@@ -517,21 +636,32 @@ export default function AdminPage() {
             newGuess.comment = guess.comment;
           }
           
-          console.log(`Enviando para Firestore:`, newGuess);
-          
           // Adicionar o palpite ao Firestore
           try {
             await createBulkGuess(newGuess);
-            console.log(`Palpite adicionado com sucesso: ${guess.name}`);
             successCount++;
+            setImportProgress(prev => ({
+              ...prev,
+              success: prev.success + 1
+            }));
           } catch (error) {
             console.error(`Erro ao criar palpite para ${guess.name}:`, error);
             errorCount++;
+            setImportProgress(prev => ({
+              ...prev,
+              errors: prev.errors + 1
+            }));
           }
           
           // Pequena pausa entre operações para não sobrecarregar
           await new Promise(resolve => setTimeout(resolve, 300));
         }
+        
+        // Marcar como concluído
+        setImportProgress(prev => ({
+          ...prev,
+          completed: true
+        }));
         
         // Recarregar os palpites após adicionar todos
         await fetchGuesses();
@@ -543,36 +673,29 @@ export default function AdminPage() {
         if (errorCount > 0) {
           toast.error(`${errorCount} palpites não puderam ser importados.`);
         }
+        
+        // Aguardar um pouco para que o usuário veja o resultado final
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
       } catch (error) {
         console.error("Erro ao importar palpites:", error);
         toast.error("Erro ao importar palpites do arquivo");
       } finally {
-        setAddingBulkGuesses(false);
-        setCurrentGuessInfo(null);
         // Limpar o input file
         if (event.target) {
           event.target.value = '';
         }
+        setIsImportingFile(false);
       }
     };
     
     reader.onerror = () => {
       console.error("Erro ao ler o arquivo");
       toast.error("Erro ao ler o arquivo");
-      setAddingBulkGuesses(false);
+      setIsImportingFile(false);
     };
     
     reader.readAsText(file);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedGuesses.length === guesses.length) {
-      // Se todos já estão selecionados, desseleciona todos
-      setSelectedGuesses([]);
-    } else {
-      // Caso contrário, seleciona todos
-      setSelectedGuesses(guesses.map(g => g.id));
-    }
   };
 
   const handleCheckboxChange = (guessId: string, index: number, event?: React.MouseEvent) => {
@@ -586,7 +709,7 @@ export default function AdminPage() {
       // Se shift está pressionado e há um último checkbox clicado
       const start = Math.min(index, lastCheckedIndex);
       const end = Math.max(index, lastCheckedIndex);
-      const rangeGuessIds = guesses.slice(start, end + 1).map(g => g.id);
+      const rangeGuessIds = filteredGuesses.slice(start, end + 1).map(g => g.id);
       
       if (isCurrentlySelected) {
         // Se estamos desmarcando, remove todos os IDs no intervalo da seleção
@@ -697,30 +820,8 @@ export default function AdminPage() {
     document.body.removeChild(link);
   };
 
-  const handleDateSelect = (date: Date | undefined) => {
-    setNewGuess({...newGuess, date});
-    
-    if (date) {
-      // Filtrar os palpites que têm a mesma data
-      const formattedSelectedDate = format(date, 'yyyy-MM-dd');
-      const matchingGuesses = guesses.filter(guess => {
-        // Convertemos a data do palpite para o mesmo formato para comparação
-        const guessDate = guess.guessDate.toDate();
-        const formattedGuessDate = format(guessDate, 'yyyy-MM-dd');
-        return formattedGuessDate === formattedSelectedDate;
-      });
-      
-      setGuessesByDate(matchingGuesses);
-    } else {
-      setGuessesByDate([]);
-    }
-  };
-
   const handleAddGuess = async () => {
-    if (!newGuess.userName || !newGuess.date) {
-      toast.error("Por favor, preencha o nome e a data");
-      return;
-    }
+    if (!newGuess.userName || !newGuess.date || !user) return;
 
     setIsCreatingGuess(true);
 
@@ -728,37 +829,111 @@ export default function AdminPage() {
       // Criar um objeto com os dados do palpite
       const guessData = {
         userName: newGuess.userName,
-        userId: "admin_created", // Como é criado pelo admin, usamos um ID especial
-        guessDate: Timestamp.fromDate(newGuess.date), // Corrigido de 'date' para 'guessDate'
-        comment: newGuess.comment || undefined
+        userId: user.uid,
+        guessDate: Timestamp.fromDate(newGuess.date),
+        comment: newGuess.comment || ''
       };
-
-      // Adicionar o palpite ao Firestore
-      await createBulkGuess(guessData);
-
-      // Recarregar os palpites
-      const updatedGuesses = await getAllGuesses();
-      setGuesses(updatedGuesses);
-
-      // Limpar o formulário e fechar o modal
-      setNewGuess({
-        userName: '',
-        comment: '',
-        date: undefined
-      });
-      setGuessesByDate([]);
-      setIsGuessDialogOpen(false);
       
-      toast.success("Palpite criado com sucesso!");
-    } catch (error) {
+      // Criar o palpite no Firestore (retorna o objeto completo do palpite)
+      const createdGuess = await createGuess(guessData);
+      
+      if (createdGuess) {
+        // Adicionar o novo palpite à lista local
+        const updatedGuesses = [...guesses, createdGuess];
+        setGuesses(updatedGuesses);
+        
+        toast.success("Palpite criado com sucesso!");
+        
+        // Limpar o formulário e fechar o modal
+        setNewGuess({
+          userName: '',
+          comment: '',
+          date: undefined
+        });
+        setIsGuessDialogOpen(false);
+      }
+    } catch (error: unknown) {
       console.error("Erro ao criar palpite:", error);
-      toast.error("Erro ao criar palpite. Tente novamente.");
+      
+      if (error instanceof Error && error.message?.includes("já existe")) {
+        toast.error("Este usuário já tem um palpite para esta data.");
+      } else {
+        toast.error("Erro ao criar palpite. Tente novamente.");
+      }
     } finally {
       setIsCreatingGuess(false);
     }
   };
 
-  if (isLoading || loading) {
+  const handleEditGuess = async () => {
+    if (!selectedGuess || !selectedGuess.guessDate) return;
+
+    setIsCreatingGuess(true);
+
+    try {
+      // Criar um objeto com os dados do palpite atualizado
+      const guessData = {
+        userName: selectedGuess.userName,
+        guessDate: selectedGuess.guessDate,
+        comment: selectedGuess.comment || ''
+      };
+      
+      // Chamar a função para atualizar o palpite no Firestore
+      await updateGuess(selectedGuess.id, guessData);
+      
+      // Atualizar o estado local dos palpites
+      const updatedGuesses = guesses.map(g => 
+        g.id === selectedGuess.id ? {
+          ...g,
+          userName: selectedGuess.userName,
+          guessDate: selectedGuess.guessDate,
+          comment: selectedGuess.comment,
+          updatedAt: Timestamp.fromDate(new Date())
+        } : g
+      );
+      setGuesses(updatedGuesses);
+
+      // Limpar o formulário e fechar o modal
+      setSelectedGuess(null);
+      setNewGuess({ userName: '', comment: '', date: undefined });
+      setIsGuessDialogOpen(false);
+      
+      toast.success("Palpite atualizado com sucesso!");
+    } catch (error) {
+      console.error('Erro ao atualizar palpite:', error);
+      toast.error("Erro ao atualizar palpite. Tente novamente.");
+    } finally {
+      setIsCreatingGuess(false);
+    }
+  };
+
+  const handleSort = (key: keyof BirthGuess) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    
+    setSortConfig({ key, direction });
+  };
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterConfig({ dateRange: null, showWithComments: null });
+    setSortConfig({ key: null, direction: 'ascending' });
+  };
+
+  const toggleSelectAllFiltered = () => {
+    if (selectedGuesses.length === filteredGuesses.length) {
+      // Se todos já estão selecionados, desseleciona todos
+      setSelectedGuesses([]);
+    } else {
+      // Caso contrário, seleciona todos os filtrados
+      setSelectedGuesses(filteredGuesses.map(g => g.id));
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -799,8 +974,7 @@ export default function AdminPage() {
             <Button 
               variant="outline" 
               onClick={() => setIsOpen(true)}
-              disabled={updatingDate}
-              className="bg-background border-primary/20 hover:bg-primary/10"
+              className="bg-background border-primary/20 hover:bg-primary/10 cursor-pointer"
             >
               {settings?.actualBirthDate ? "Alterar data real" : "Definir data real"}
             </Button>
@@ -861,41 +1035,24 @@ export default function AdminPage() {
                     <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                       <Button 
                         onClick={() => setIsGuessDialogOpen(true)}
-                        disabled={loading}
                         className="cursor-pointer flex-grow sm:flex-grow-0"
                       >
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Novo Palpite
+                        Adicionar Palpite
                       </Button>
                       
                       <Button 
                         variant="outline" 
                         onClick={() => setIsImportDialogOpen(true)}
-                        disabled={addingBulkGuesses}
-                        className="flex-grow sm:flex-grow-0"
+                        className="flex-grow sm:flex-grow-0 cursor-pointer"
                       >
-                        {addingBulkGuesses ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            {currentGuessInfo ? (
-                              <span>
-                                Importando {currentGuessInfo.index + 1}/{currentGuessInfo.total}: {currentGuessInfo.name}
-                              </span>
-                            ) : (
-                              "Iniciando..."
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <ListPlus className="mr-2 h-4 w-4" />
-                            Importar
-                          </>
-                        )}
+                        <ListPlus className="mr-2 h-4 w-4" />
+                        Importar
                       </Button>
                       <Button 
                         variant="outline" 
                         onClick={() => setIsExportDialogOpen(true)}
-                        className="flex-grow sm:flex-grow-0"
+                        className="flex-grow sm:flex-grow-0 cursor-pointer"
                       >
                         <CheckIcon className="mr-2 h-4 w-4" />
                         Exportar
@@ -904,7 +1061,7 @@ export default function AdminPage() {
                         variant="outline" 
                         onClick={() => setIsBulkDeleteDialogOpen(true)}
                         disabled={isDeletingMultiple || selectedGuesses.length === 0}
-                        className="flex-grow sm:flex-grow-0"
+                        className="flex-grow sm:flex-grow-0 cursor-pointer"
                       >
                         {isDeletingMultiple ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -917,6 +1074,119 @@ export default function AdminPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-6 space-y-4">
+                    {/* Barra de pesquisa e filtros */}
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <div className="relative w-full md:w-1/2">
+                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="search"
+                          placeholder="Pesquisar por nome ou comentário..."
+                          className="w-full pl-9"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="flex flex-wrap gap-2 flex-1 justify-end">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" className="cursor-pointer">
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              Filtrar por data
+                              {filterConfig.dateRange && (filterConfig.dateRange.from || filterConfig.dateRange.to) && (
+                                <Badge variant="secondary" className="ml-2 bg-secondary text-secondary-foreground">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                </Badge>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                              mode="range"
+                              selected={{
+                                from: filterConfig.dateRange?.from || undefined,
+                                to: filterConfig.dateRange?.to || undefined
+                              }}
+                              onSelect={(range) => 
+                                setFilterConfig({
+                                  ...filterConfig,
+                                  dateRange: range || null
+                                })
+                              }
+                              numberOfMonths={2}
+                              locale={ptBR}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="cursor-pointer">
+                              <MessageCircle className="mr-2 h-4 w-4" />
+                              Comentários
+                              {filterConfig.showWithComments !== null && (
+                                <Badge variant="secondary" className="ml-2 bg-secondary text-secondary-foreground">
+                                  <XCircle className="h-3 w-3 mr-1" />
+                                </Badge>
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuRadioGroup 
+                              value={filterConfig.showWithComments === null 
+                                ? "all" 
+                                : filterConfig.showWithComments ? "with" : "without"
+                              }
+                              onValueChange={(value) => {
+                                setFilterConfig({
+                                  ...filterConfig,
+                                  showWithComments: value === "all" 
+                                    ? null 
+                                    : value === "with" ? true : false
+                                });
+                              }}
+                            >
+                              <DropdownMenuRadioItem value="all" className="cursor-pointer">Todos</DropdownMenuRadioItem>
+                              <DropdownMenuRadioItem value="with" className="cursor-pointer">Com comentários</DropdownMenuRadioItem>
+                              <DropdownMenuRadioItem value="without" className="cursor-pointer">Sem comentários</DropdownMenuRadioItem>
+                            </DropdownMenuRadioGroup>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        {(searchTerm || filterConfig.dateRange || filterConfig.showWithComments !== null || sortConfig.key) && (
+                          <Button 
+                            variant="ghost" 
+                            onClick={clearFilters}
+                            className="cursor-pointer"
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Limpar filtros
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Estatísticas e contagem */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="text-xs py-1">
+                          Total: {guesses.length} palpites
+                        </Badge>
+                        {filteredGuesses.length !== guesses.length && (
+                          <Badge variant="outline" className="text-xs py-1 bg-secondary/30">
+                            Filtrados: {filteredGuesses.length} palpites
+                          </Badge>
+                        )}
+                        {selectedGuesses.length > 0 && (
+                          <Badge variant="outline" className="text-xs py-1 bg-primary/10 text-primary">
+                            Selecionados: {selectedGuesses.length} palpites
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
                   <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
                     <Table>
                       <TableCaption>Lista de palpites para o nascimento {settings?.babyName ? `da ${settings.babyName}` : ''}</TableCaption>
@@ -924,20 +1194,54 @@ export default function AdminPage() {
                         <TableRow>
                           <TableHead className="w-[50px]">
                             <Checkbox 
-                              checked={guesses.length > 0 && selectedGuesses.length === guesses.length}
-                              onCheckedChange={toggleSelectAll}
+                              checked={filteredGuesses.length > 0 && selectedGuesses.length === filteredGuesses.length}
+                              onCheckedChange={toggleSelectAllFiltered}
+                              className="cursor-pointer"
                               aria-label="Selecionar todos os palpites"
                             />
                           </TableHead>
-                          <TableHead>Usuário</TableHead>
-                          <TableHead>Data e Hora</TableHead>
-                          <TableHead>Comentário</TableHead>
+                          <TableHead onClick={() => handleSort('userName')} className="cursor-pointer hover:bg-secondary/20 transition-colors">
+                            Usuário
+                            {sortConfig.key === 'userName' && (
+                              <span className="ml-2 inline-flex">
+                                {sortConfig.direction === 'ascending' ? (
+                                  <ArrowUpIcon className="h-4 w-4" />
+                                ) : (
+                                  <ArrowDownIcon className="h-4 w-4" />
+                                )}
+                              </span>
+                            )}
+                          </TableHead>
+                          <TableHead onClick={() => handleSort('guessDate')} className="cursor-pointer hover:bg-secondary/20 transition-colors">
+                            Data e Hora
+                            {sortConfig.key === 'guessDate' && (
+                              <span className="ml-2 inline-flex">
+                                {sortConfig.direction === 'ascending' ? (
+                                  <ArrowUpIcon className="h-4 w-4" />
+                                ) : (
+                                  <ArrowDownIcon className="h-4 w-4" />
+                                )}
+                              </span>
+                            )}
+                          </TableHead>
+                          <TableHead onClick={() => handleSort('comment')} className="cursor-pointer hover:bg-secondary/20 transition-colors">
+                            Comentário
+                            {sortConfig.key === 'comment' && (
+                              <span className="ml-2 inline-flex">
+                                {sortConfig.direction === 'ascending' ? (
+                                  <ArrowUpIcon className="h-4 w-4" />
+                                ) : (
+                                  <ArrowDownIcon className="h-4 w-4" />
+                                )}
+                              </span>
+                            )}
+                          </TableHead>
                           <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {guesses.length > 0 ? (
-                          guesses.map((guess, index) => (
+                        {filteredGuesses.length > 0 ? (
+                          filteredGuesses.map((guess, index) => (
                             <TableRow key={guess.id}>
                               <TableCell>
                                 <Checkbox 
@@ -948,7 +1252,7 @@ export default function AdminPage() {
                                     // Passa o evento React para a função de tratamento
                                     handleCheckboxChange(guess.id, index, event as React.MouseEvent);
                                   }}
-                                  className="h-5 w-5 border-2"
+                                  className="h-5 w-5 border-2 cursor-pointer"
                                   aria-label={`Selecionar palpite de ${guess.userName}`}
                                 />
                               </TableCell>
@@ -963,17 +1267,39 @@ export default function AdminPage() {
                                 }
                               </TableCell>
                               <TableCell className="max-w-[120px] md:max-w-xs truncate">
-                                {guess.comment || "-"}
+                                {guess.comment ? (
+                                  <HoverCard>
+                                    <HoverCardTrigger asChild>
+                                      <span className="cursor-help underline decoration-dotted underline-offset-2">
+                                        {guess.comment.length > 40
+                                          ? `${guess.comment.substring(0, 40)}...`
+                                          : guess.comment}
+                                      </span>
+                                    </HoverCardTrigger>
+                                    <HoverCardContent className="w-80">
+                                      <div className="text-sm font-normal">
+                                        {guess.comment}
+                                      </div>
+                                    </HoverCardContent>
+                                  </HoverCard>
+                                ) : (
+                                  "-"
+                                )}
                               </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
                                   <Button 
                                     variant="outline" 
-                                    size="icon"
+                                    size="icon" 
+                                    className="cursor-pointer"
                                     onClick={() => {
-                                      // Implementação atual para abrir diálogo de edição de palpite
-                                      // setSelectedGuess(guess);
-                                      // setIsGuessDialogOpen(true);
+                                      setSelectedGuess(guess);
+                                      setNewGuess({
+                                        userName: guess.userName,
+                                        comment: guess.comment || '',
+                                        date: new Date(guess.guessDate.seconds * 1000)
+                                      });
+                                      setIsGuessDialogOpen(true);
                                     }}
                                   >
                                     <Edit className="h-4 w-4" />
@@ -985,7 +1311,7 @@ export default function AdminPage() {
                                       <Button 
                                         variant="outline" 
                                         size="icon" 
-                                        className="text-destructive"
+                                        className="text-destructive cursor-pointer"
                                       >
                                         <Trash2 className="h-4 w-4" />
                                         <span className="sr-only">Excluir</span>
@@ -1000,9 +1326,9 @@ export default function AdminPage() {
                                         </AlertDialogDescription>
                                       </AlertDialogHeader>
                                       <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
                                         <AlertDialogAction 
-                                          className="bg-destructive hover:bg-destructive/90"
+                                          className="bg-destructive hover:bg-destructive/90 cursor-pointer"
                                           onClick={() => handleDeleteGuess(guess.id)}
                                           disabled={deletingGuess === guess.id}
                                         >
@@ -1022,7 +1348,7 @@ export default function AdminPage() {
                         ) : (
                           <TableRow>
                             <TableCell colSpan={5} className="text-center py-4">
-                              Nenhum palpite registrado ainda.
+                              Nenhum palpite encontrado.
                             </TableCell>
                           </TableRow>
                         )}
@@ -1094,6 +1420,7 @@ export default function AdminPage() {
                                   size="sm"
                                   onClick={() => handleToggleAdmin(userItem.uid, userItem.isAdmin)}
                                   disabled={updatingUser === userItem.uid || userItem.uid === user?.uid}
+                                  className="cursor-pointer"
                                 >
                                   {updatingUser === userItem.uid ? (
                                     "Atualizando..."
@@ -1177,7 +1504,7 @@ export default function AdminPage() {
                               }}
                               size="sm"
                               variant="outline"
-                              className="gap-1"
+                              className="gap-1 cursor-pointer"
                             >
                               {settings?.actualBirthDate ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                               {settings?.actualBirthDate ? "Alterar" : "Definir"}
@@ -1214,7 +1541,7 @@ export default function AdminPage() {
                               <Button
                                 id="expectedBirthDate"
                                 variant="outline"
-                                className="w-full justify-start text-left font-normal"
+                                className="w-full justify-start text-left font-normal cursor-pointer"
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {settings?.expectedBirthDate ? (
@@ -1228,7 +1555,7 @@ export default function AdminPage() {
                                 )}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
+                            <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
                                 selected={settings?.expectedBirthDate ? new Date(settings.expectedBirthDate.seconds * 1000) : undefined}
@@ -1262,7 +1589,7 @@ export default function AdminPage() {
                               <Button
                                 id="lastMenstruationDate"
                                 variant="outline"
-                                className="w-full justify-start text-left font-normal"
+                                className="w-full justify-start text-left font-normal cursor-pointer"
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {settings?.lastMenstruationDate ? (
@@ -1276,7 +1603,7 @@ export default function AdminPage() {
                                 )}
                               </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
+                            <PopoverContent className="w-auto p-0" align="start">
                               <Calendar
                                 mode="single"
                                 selected={settings?.lastMenstruationDate ? new Date(settings.lastMenstruationDate.seconds * 1000) : undefined}
@@ -1341,6 +1668,134 @@ export default function AdminPage() {
                             onCheckedChange={(checked) => setSettings({...settings, showCountdown: checked} as AppSettings)}
                           />
                         </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="guessPrice" className="text-sm font-medium">
+                            Valor do palpite (R$)
+                          </Label>
+                          <div className="flex items-center">
+                            <Input
+                              id="guessPrice"
+                              type="number"
+                              min="1"
+                              step="0.01"
+                              value={settings?.guessPrice || 10}
+                              onChange={(e) => setSettings({...settings, guessPrice: parseFloat(e.target.value) || 10} as AppSettings)}
+                              className="max-w-[120px]"
+                            />
+                            <p className="text-sm text-muted-foreground ml-3">
+                              Valor cobrado por cada palpite.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Seção de Informações de Pagamento e Contato */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <CreditCard className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-medium">Informações de Pagamento e Contato</h3>
+                      </div>
+                      <Separator className="my-2" />
+                      
+                      {/* Informações de PIX */}
+                      <div className="space-y-4 max-w-md">
+                        <div className="space-y-2">
+                          <Label htmlFor="pixKeyType" className="text-sm font-medium">
+                            Tipo de Chave PIX
+                          </Label>
+                          <Select 
+                            value={settings?.pixKeyType || 'celular'} 
+                            onValueChange={(value) => setSettings({...settings, pixKeyType: value as 'celular' | 'cpf' | 'email' | 'aleatoria'} as AppSettings)}
+                          >
+                            <SelectTrigger className="w-full">
+                              <SelectValue placeholder="Selecione o tipo de chave" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="celular">Celular</SelectItem>
+                              <SelectItem value="cpf">CPF</SelectItem>
+                              <SelectItem value="email">E-mail</SelectItem>
+                              <SelectItem value="aleatoria">Chave Aleatória</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="pixKey" className="text-sm font-medium">
+                            Chave PIX
+                          </Label>
+                          <Input
+                            id="pixKey"
+                            type="text"
+                            value={settings?.pixKey || ''}
+                            onChange={(e) => setSettings({...settings, pixKey: e.target.value} as AppSettings)}
+                            placeholder={
+                              settings?.pixKeyType === 'celular' ? '(XX) XXXXX-XXXX' :
+                              settings?.pixKeyType === 'cpf' ? 'XXX.XXX.XXX-XX' :
+                              settings?.pixKeyType === 'email' ? 'exemplo@email.com' :
+                              'Chave aleatória'
+                            }
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            {
+                              settings?.pixKeyType === 'celular' ? 'Insira o número de telefone com DDD' :
+                              settings?.pixKeyType === 'cpf' ? 'Insira o CPF (somente números ou com formatação)' :
+                              settings?.pixKeyType === 'email' ? 'Insira o e-mail cadastrado como chave PIX' :
+                              'Insira a chave aleatória completa'
+                            }
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="pixName" className="text-sm font-medium">
+                            Nome do Beneficiário
+                          </Label>
+                          <Input
+                            id="pixName"
+                            type="text"
+                            value={settings?.pixName || ''}
+                            onChange={(e) => setSettings({...settings, pixName: e.target.value} as AppSettings)}
+                            placeholder="Nome completo do beneficiário"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="pixBank" className="text-sm font-medium">
+                            Banco
+                          </Label>
+                          <Input
+                            id="pixBank"
+                            type="text"
+                            value={settings?.pixBank || ''}
+                            onChange={(e) => setSettings({...settings, pixBank: e.target.value} as AppSettings)}
+                            placeholder="Nome da instituição financeira"
+                          />
+                        </div>
+
+                        {/* Informações de Contato */}
+                        <div className="mt-6 pt-4 border-t">
+                          <div className="flex items-center gap-2 mb-4">
+                            <PhoneIcon className="h-4 w-4 text-primary" />
+                            <h4 className="text-md font-medium">Informações de Contato</h4>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="contactPhone" className="text-sm font-medium">
+                              Número para WhatsApp
+                            </Label>
+                            <Input
+                              id="contactPhone"
+                              type="text"
+                              value={settings?.contactPhone || ''}
+                              onChange={(e) => setSettings({...settings, contactPhone: e.target.value} as AppSettings)}
+                              placeholder="(XX) XXXXX-XXXX"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Este número será usado para receber os palpites via WhatsApp.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     
@@ -1358,14 +1813,21 @@ export default function AdminPage() {
                             <Button 
                               onClick={async () => {
                                 try {
-                                  await updateAppSettings(settings as AppSettings);
+                                  // Garantir que o valor do palpite seja um número
+                                  const updatedSettings = {
+                                    ...settings,
+                                    guessPrice: typeof settings?.guessPrice === 'number' ? settings.guessPrice : 10
+                                  } as AppSettings;
+                                  
+                                  await updateAppSettings(updatedSettings);
                                   toast.success("Configurações atualizadas com sucesso");
+                                  console.log("Configurações atualizadas:", updatedSettings);
                                 } catch (error) {
                                   console.error("Erro ao atualizar configurações:", error);
                                   toast.error("Erro ao atualizar configurações");
                                 }
                               }}
-                              className="gap-2"
+                              className="gap-2 cursor-pointer"
                             >
                               <Save className="h-4 w-4" />
                               Salvar Configurações
@@ -1393,7 +1855,7 @@ export default function AdminPage() {
                       <p className="text-muted-foreground">Não há usuários pendentes de aprovação.</p>
                     </div>
                   ) : (
-                    <div className="overflow-x-auto -mx-6 px-6 sm:mx-0 sm:px-0">
+                    <div className="overflow-x-auto">
                       <Table>
                         <TableCaption>Lista de usuários aguardando aprovação</TableCaption>
                         <TableHeader>
@@ -1423,7 +1885,7 @@ export default function AdminPage() {
                                     size="sm"
                                     onClick={() => handleApproveUser(pendingUser.uid)}
                                     disabled={processingAction === pendingUser.uid}
-                                    className="flex-grow sm:flex-grow-0"
+                                    className="flex-grow sm:flex-grow-0 cursor-pointer"
                                   >
                                     {processingAction === pendingUser.uid ? (
                                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1435,7 +1897,7 @@ export default function AdminPage() {
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    className="hover:bg-red-100 hover:text-red-700 hover:border-red-700 flex-grow sm:flex-grow-0"
+                                    className="hover:bg-red-100 hover:text-red-700 hover:border-red-700 cursor-pointer flex-grow sm:flex-grow-0"
                                     onClick={() => handleRejectUser(pendingUser.uid)}
                                     disabled={processingAction === pendingUser.uid}
                                   >
@@ -1478,23 +1940,26 @@ export default function AdminPage() {
                         <Button
                           id="birthdate"
                           variant="outline"
-                          className="justify-start text-left font-normal w-full"
+                          className={cn(
+                            "w-full justify-start text-left font-normal cursor-pointer",
+                            !actualBirthDate && "text-muted-foreground"
+                          )}
                         >
                           {actualBirthDate ? (
-                            format(actualBirthDate, "dd/MM/yyyy")
+                            format(actualBirthDate, "PPP", { locale: ptBR })
                           ) : (
                             <span>Selecione uma data</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
                           selected={actualBirthDate}
                           onSelect={(date) => setActualBirthDate(date || undefined)}
-                          disabled={(date) => date > new Date()}
                           initialFocus
+                          locale={ptBR}
                         />
                       </PopoverContent>
                     </Popover>
@@ -1516,6 +1981,7 @@ export default function AdminPage() {
                 <Button 
                   variant="outline" 
                   onClick={() => setIsOpen(false)}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
@@ -1523,36 +1989,19 @@ export default function AdminPage() {
                   <Button
                     variant="destructive"
                     onClick={handleRemoveActualBirthDate}
-                    disabled={updatingDate}
+                    className="cursor-pointer"
                   >
-                    {updatingDate ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Removendo...
-                      </>
-                    ) : (
-                      <>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Remover Data
-                      </>
-                    )}
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remover Data
                   </Button>
                 )}
                 <Button 
                   onClick={handleSetActualBirthDate} 
-                  disabled={!actualBirthDate || updatingDate}
+                  disabled={!actualBirthDate}
+                  className="cursor-pointer"
                 >
-                  {updatingDate ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckIcon className="mr-2 h-4 w-4" />
-                      Confirmar
-                    </>
-                  )}
+                  <CheckIcon className="mr-2 h-4 w-4" />
+                  Confirmar
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -1560,38 +2009,50 @@ export default function AdminPage() {
           <Dialog open={isGuessDialogOpen} onOpenChange={setIsGuessDialogOpen}>
             <DialogContent className="sm:max-w-[550px]">
               <DialogHeader>
-                <DialogTitle>Novo Palpite</DialogTitle>
+                <DialogTitle>{selectedGuess ? "Editar Palpite" : "Novo Palpite"}</DialogTitle>
                 <DialogDescription>
-                  Adicione um novo palpite para o nascimento {settings?.babyName ? `da ${settings.babyName}` : ''}.
+                  {selectedGuess ? (
+                    `Edite o palpite de ${selectedGuess.userName}`
+                  ) : (
+                    `Adicione um novo palpite para o nascimento ${settings?.babyName ? `da ${settings.babyName}` : ''}.`
+                  )}
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="userName">Nome do usuário</Label>
+                  <div>
+                    <Label htmlFor="userName">Nome</Label>
                     <input 
                       type="text" 
                       id="userName" 
-                      value={newGuess.userName} 
-                      onChange={(e) => setNewGuess({...newGuess, userName: e.target.value})}
+                      value={selectedGuess ? selectedGuess.userName : newGuess.userName} 
+                      onChange={(e) => {
+                        if (selectedGuess) {
+                          setSelectedGuess({...selectedGuess, userName: e.target.value} as BirthGuess);
+                        } else {
+                          setNewGuess({...newGuess, userName: e.target.value});
+                        }
+                      }}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       placeholder="Nome do participante"
                     />
                   </div>
                   
-                  <div className="space-y-2">
-                    <Label htmlFor="date">Data do palpite</Label>
+                  <div>
+                    <Label htmlFor="guessDate">Data do palpite</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
-                          id="date"
+                          id="guessDate"
                           variant="outline"
                           className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !newGuess.date && "text-muted-foreground"
+                            "w-full justify-start text-left font-normal cursor-pointer",
+                            !selectedGuess?.guessDate && !newGuess.date && "text-muted-foreground"
                           )}
                         >
-                          {newGuess.date ? (
+                          {selectedGuess?.guessDate ? (
+                            format(new Date(selectedGuess.guessDate.seconds * 1000), "dd/MM/yyyy", { locale: ptBR })
+                          ) : newGuess.date ? (
                             format(newGuess.date, "dd/MM/yyyy", { locale: ptBR })
                           ) : (
                             <span>Selecione uma data</span>
@@ -1602,41 +2063,44 @@ export default function AdminPage() {
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={newGuess.date}
-                          onSelect={handleDateSelect}
+                          selected={selectedGuess?.guessDate ? 
+                            new Date(selectedGuess.guessDate.seconds * 1000) : 
+                            newGuess.date}
+                          onSelect={(date) => {
+                            if (selectedGuess) {
+                              // Usamos o operador as para forçar o tipo
+                              setSelectedGuess({
+                                ...selectedGuess, 
+                                guessDate: date ? Timestamp.fromDate(date) : selectedGuess.guessDate
+                              } as BirthGuess);
+                            } else {
+                              setNewGuess({
+                                ...newGuess,
+                                date: date || undefined
+                              });
+                            }
+                          }}
                           locale={ptBR}
                           initialFocus
                         />
                       </PopoverContent>
                     </Popover>
-
-                    {/* Mostrar quem já selecionou essa data */}
-                    {guessesByDate.length > 0 && (
-                      <div className="mt-3 p-3 bg-secondary/30 rounded-md">
-                        <p className="text-sm font-medium mb-2 text-secondary-foreground">
-                          {guessesByDate.length} {guessesByDate.length === 1 ? 'pessoa já escolheu' : 'pessoas já escolheram'} esta data:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {guessesByDate.map((guess, index) => (
-                            <Badge 
-                              key={index} 
-                              variant="secondary" 
-                              className="flex items-center gap-1"
-                            >
-                              <span>{guess.userName}</span>
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
-                  
-                  <div className="space-y-2 md:col-span-2">
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4 mt-4">
+                  <div>
                     <Label htmlFor="comment">Comentário</Label>
                     <textarea 
                       id="comment" 
-                      value={newGuess.comment} 
-                      onChange={(e) => setNewGuess({...newGuess, comment: e.target.value})}
+                      value={selectedGuess ? selectedGuess.comment || '' : newGuess.comment} 
+                      onChange={(e) => {
+                        if (selectedGuess) {
+                          setSelectedGuess({...selectedGuess, comment: e.target.value} as BirthGuess);
+                        } else {
+                          setNewGuess({...newGuess, comment: e.target.value});
+                        }
+                      }}
                       placeholder="Adicione um comentário (opcional)"
                       className="flex h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     />
@@ -1648,71 +2112,35 @@ export default function AdminPage() {
                   variant="outline" 
                   onClick={() => {
                     setIsGuessDialogOpen(false);
-                    setNewGuess({
-                      userName: '',
-                      comment: '',
-                      date: undefined
-                    });
-                    setGuessesByDate([]);
+                    setSelectedGuess(null);
+                    setNewGuess({ userName: '', comment: '', date: undefined });
                   }}
+                  className="cursor-pointer"
                 >
                   Cancelar
                 </Button>
                 <Button 
-                  onClick={handleAddGuess} 
-                  disabled={isCreatingGuess || !newGuess.userName || !newGuess.date}
-                  className="bg-primary hover:bg-primary/90"
+                  onClick={selectedGuess ? handleEditGuess : handleAddGuess}
+                  disabled={selectedGuess ? 
+                    !selectedGuess.userName || !selectedGuess.guessDate : 
+                    !newGuess.userName || !newGuess.date}
+                  className="bg-primary hover:bg-primary/90 cursor-pointer"
                 >
                   {isCreatingGuess ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Criando...
+                      {selectedGuess ? "Atualizando..." : "Criando..."}
                     </>
                   ) : (
                     <>
                       <CheckIcon className="mr-2 h-4 w-4" />
-                      Criar Palpite
+                      {selectedGuess ? "Atualizar Palpite" : "Criar Palpite"}
                     </>
                   )}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Excluir em massa</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Você tem certeza que deseja excluir os palpites selecionados? Esta ação não pode ser desfeita.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction 
-                  className="bg-destructive hover:bg-destructive/90"
-                  onClick={async () => {
-                    setIsDeletingMultiple(true);
-                    try {
-                      await deleteManyGuesses(selectedGuesses);
-                      toast.success("Palpites excluídos com sucesso");
-                      const updatedGuesses = guesses.filter(g => !selectedGuesses.includes(g.id));
-                      setGuesses(updatedGuesses);
-                      setSelectedGuesses([]);
-                    } catch (error) {
-                      console.error("Erro ao excluir palpites em massa:", error);
-                      toast.error("Erro ao excluir palpites em massa");
-                    } finally {
-                      setIsDeletingMultiple(false);
-                      setIsBulkDeleteDialogOpen(false);
-                    }
-                  }}
-                  disabled={isDeletingMultiple}
-                >
-                  {isDeletingMultiple ? "Excluindo..." : "Excluir"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
 
           {/* Diálogo de exportação */}
           <AlertDialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
@@ -1726,7 +2154,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
                 <Button 
                   variant="outline" 
-                  className="h-20"
+                  className="h-20 cursor-pointer"
                   onClick={() => {
                     exportGuessesToCSV();
                     setIsExportDialogOpen(false);
@@ -1739,7 +2167,7 @@ export default function AdminPage() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-20"
+                  className="h-20 cursor-pointer"
                   onClick={() => {
                     exportGuessesToJSON();
                     setIsExportDialogOpen(false);
@@ -1752,7 +2180,7 @@ export default function AdminPage() {
                 </Button>
               </div>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -1770,10 +2198,9 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4">
                 <Button 
                   variant="outline" 
-                  className="h-20"
+                  className="h-20 cursor-pointer"
                   onClick={() => {
                     // Implementação atual para CSV
-                    setAddingBulkGuesses(true);
                     setIsImportDialogOpen(false);
                     // Redireciona para o fluxo atual de adição em massa
                     document.getElementById('csv-input')?.click();
@@ -1786,10 +2213,9 @@ export default function AdminPage() {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="h-20"
+                  className="h-20 cursor-pointer"
                   onClick={() => {
                     // Implementação atual para JSON
-                    setAddingBulkGuesses(true);
                     setIsImportDialogOpen(false);
                     // Redireciona para o fluxo atual de adição em massa
                     document.getElementById('json-input')?.click();
@@ -1802,11 +2228,146 @@ export default function AdminPage() {
                 </Button>
               </div>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
           
+          {/* Diálogo para exclusão em massa */}
+          <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Excluir Palpites em Massa</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Você tem certeza que deseja excluir {selectedGuesses.length} {selectedGuesses.length === 1 ? 'palpite selecionado' : 'palpites selecionados'}? Esta ação não pode ser desfeita.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="cursor-pointer">Cancelar</AlertDialogCancel>
+                <AlertDialogAction 
+                  className="bg-destructive hover:bg-destructive/90 cursor-pointer"
+                  onClick={async () => {
+                    setIsDeletingMultiple(true);
+                    try {
+                      await deleteManyGuesses(selectedGuesses);
+                      toast.success(`${selectedGuesses.length} ${selectedGuesses.length === 1 ? 'palpite excluído' : 'palpites excluídos'} com sucesso`);
+                      // Atualizar a lista excluindo os palpites selecionados
+                      const updatedGuesses = guesses.filter(g => !selectedGuesses.includes(g.id));
+                      setGuesses(updatedGuesses);
+                      setSelectedGuesses([]);
+                    } catch (error) {
+                      console.error("Erro ao excluir palpites em massa:", error);
+                      toast.error("Erro ao excluir palpites em massa");
+                    } finally {
+                      setIsDeletingMultiple(false);
+                      setIsBulkDeleteDialogOpen(false);
+                    }
+                  }}
+                  disabled={isDeletingMultiple}
+                >
+                  {isDeletingMultiple ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Excluindo...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir
+                    </>
+                  )}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Diálogo de progresso de importação */}
+          <Dialog open={isImportingFile} onOpenChange={(open) => {
+            // Apenas permitir fechar se a importação estiver completa
+            if (!open && importProgress.completed) {
+              setIsImportingFile(false);
+            }
+          }}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Importando Palpites</DialogTitle>
+                <DialogDescription>
+                  {importProgress.completed 
+                    ? "Importação concluída!" 
+                    : "Aguarde enquanto importamos os palpites..."}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex flex-col gap-4 py-4">
+                {/* Barra de progresso */}
+                <div className="w-full bg-secondary rounded-full h-2.5 dark:bg-gray-700">
+                  <div 
+                    className="bg-primary h-2.5 rounded-full transition-all duration-300 ease-in-out" 
+                    style={{ 
+                      width: `${(importProgress.current / importProgress.total) * 100}%` 
+                    }}
+                  ></div>
+                </div>
+                
+                {/* Detalhes do progresso */}
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>
+                    {importProgress.current} de {importProgress.total} palpites
+                  </span>
+                  <span>
+                    {((importProgress.current / importProgress.total) * 100).toFixed(0)}%
+                  </span>
+                </div>
+                
+                {/* Palpite atual */}
+                {importProgress.currentName && !importProgress.completed && (
+                  <div className="flex items-center gap-2 p-2 rounded-md border bg-background/50">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span>Importando: <strong>{importProgress.currentName}</strong></span>
+                  </div>
+                )}
+                
+                {/* Estatísticas */}
+                {(importProgress.success > 0 || importProgress.errors > 0) && (
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <div className="flex items-center gap-2 p-2 bg-success/10 rounded-md">
+                      <CheckCircle className="h-4 w-4 text-success" />
+                      <span className="text-sm"><strong>{importProgress.success}</strong> importados</span>
+                    </div>
+                    
+                    {importProgress.errors > 0 && (
+                      <div className="flex items-center gap-2 p-2 bg-destructive/10 rounded-md">
+                        <XCircle className="h-4 w-4 text-destructive" />
+                        <span className="text-sm"><strong>{importProgress.errors}</strong> falhas</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter>
+                {importProgress.completed ? (
+                  <Button 
+                    onClick={() => setIsImportingFile(false)}
+                    className="cursor-pointer"
+                  >
+                    <CheckIcon className="mr-2 h-4 w-4" />
+                    Concluir
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    disabled
+                    className="cursor-wait"
+                  >
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processando...
+                  </Button>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           {/* Inputs ocultos para upload de arquivos */}
           <input 
             type="file" 

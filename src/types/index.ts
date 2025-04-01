@@ -38,6 +38,12 @@ export interface AppSettings {
   lastMenstruationDate?: Timestamp; // Data da Última Menstruação (DUM) ou último ultrassom
   showCountdown: boolean;
   allowGuesses: boolean;
+  guessPrice: number; // Preço de cada palpite em reais
+  pixKey?: string; // Chave PIX para pagamentos
+  pixKeyType?: 'celular' | 'cpf' | 'email' | 'aleatoria'; // Tipo da chave PIX
+  pixName?: string; // Nome da pessoa que receberá o PIX
+  pixBank?: string; // Banco da conta PIX
+  contactPhone?: string; // Telefone para contato (WhatsApp)
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
