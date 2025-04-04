@@ -124,7 +124,7 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="w-[90vw] max-w-full sm:max-w-[500px] p-4 sm:p-6 overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Como fazer um palpite</DialogTitle>
           <DialogDescription>
@@ -145,8 +145,8 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
                 Entre em contato pelo WhatsApp para informar seu nome e a data do seu palpite.
               </p>
               
-              <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-900">
-                <div className="flex items-center justify-between">
+              <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-3 sm:p-4 bg-slate-50 dark:bg-slate-900 w-full">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full gap-2">
                   <div className="flex items-center gap-2">
                     <PhoneIcon className="h-4 w-4 text-green-600 dark:text-green-400" />
                     <span className="font-medium">{contactData.phone}</span>
@@ -155,7 +155,7 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
                     <Button 
                       variant="outline" 
                       size="icon" 
-                      className="h-8 w-8"
+                      className="h-8 w-8 cursor-pointer"
                       onClick={() => {
                         navigator.clipboard.writeText(contactData.rawPhone);
                         setPhoneCopied(true);
@@ -168,7 +168,7 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
                     <Button 
                       asChild
                       size="sm"
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-green-600 hover:bg-green-700 cursor-pointer"
                     >
                       <a href={contactData.whatsappUrl} target="_blank" rel="noopener noreferrer">
                         <MessageCircle className="h-4 w-4 mr-1" />
@@ -193,7 +193,7 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
                 Faça o pagamento de R$ {pixData.value} para cada palpite que deseja fazer.
               </p>
               
-              <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
                 <div className="w-32 h-32 bg-white p-2 rounded-md shadow-md flex-shrink-0">
                   <Image 
                     src="/pix_paty.png" 
@@ -206,24 +206,24 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
                 
                 <div className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 w-full bg-slate-50 dark:bg-slate-900">
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-1">
                       <span className="text-sm text-slate-500 dark:text-slate-400">Nome</span>
                       <span className="font-medium">{pixData.name}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-1">
                       <span className="text-sm text-slate-500 dark:text-slate-400">Banco</span>
                       <span className="font-medium">{pixData.bank}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-wrap justify-between items-center gap-1">
                       <span className="text-sm text-slate-500 dark:text-slate-400">Chave PIX</span>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium truncate max-w-[180px]">{pixData.key}</span>
+                        <span className="font-medium truncate max-w-[120px] sm:max-w-[180px]">{pixData.key}</span>
                         <Button 
                           variant="outline" 
                           size="icon" 
-                          className="h-6 w-6"
+                          className="h-6 w-6 cursor-pointer"
                           onClick={() => {
                             navigator.clipboard.writeText(pixData.rawKey);
                             setPixCopied(true);
@@ -266,12 +266,12 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
           <div className="pt-4 border-t border-dashed border-slate-200 dark:border-slate-700">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="w-full h-auto py-1.5 px-2 flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm">
+                <Button variant="ghost" size="sm" className="w-full cursor-pointer h-auto py-1.5 px-2 flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm">
                   <InfoIcon className="h-4 w-4 text-amber-500" />
                   <span>Regras de distribuição do prêmio</span>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 bg-white dark:bg-slate-900 p-4 shadow-xl border border-amber-200 dark:border-amber-700/30">
+              <PopoverContent className="w-[90vw] max-w-[320px] bg-white dark:bg-slate-900 p-4 shadow-xl border border-amber-200 dark:border-amber-700/30">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <TrophyIcon className="h-5 w-5 text-amber-500" />
@@ -299,6 +299,7 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
         
         <DialogFooter>
           <Button 
+            className="w-full cursor-pointer"
             onClick={() => {
               if (onOpenChange) onOpenChange(false);
             }}

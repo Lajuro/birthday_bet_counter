@@ -423,67 +423,74 @@ export default function Home() {
         {/* Conteúdo do card */}
         <div className={contentPadding}>
           {/* Contadores de tempo */}
-          <div className={`grid ${gridCols} gap-1.5 text-center`}>
+          <div className={`grid ${gridCols} gap-2 text-center`}>
             {showWeeks && (
               <div className="flex flex-col items-center justify-center">
-                <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                  <span className={`${numberSize} font-bold ${numberColor}`}>{data.weeks}</span>
-                  <span className={`text-xs font-medium ${labelColor}`}>Sem</span>
+                <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                  <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                  <span className={`${numberSize} font-bold ${numberColor} relative`}>{data.weeks}</span>
+                  <span className={`text-xs font-medium ${labelColor} relative`}>Semanas</span>
                 </div>
               </div>
             )}
             
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative`}>
                   {showWeeks ? data.days : Math.floor(data.weeks * 7 + data.days)}
                 </span>
-                <span className={`text-xs font-medium ${labelColor}`}>Dias</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Dias</span>
               </div>
             </div>
             
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>{data.hours}</span>
-                <span className={`text-xs font-medium ${labelColor}`}>Hrs</span>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative`}>{data.hours}</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Horas</span>
               </div>
             </div>
             
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>{data.minutes}</span>
-                <span className={`text-xs font-medium ${labelColor}`}>Min</span>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative`}>{data.minutes}</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Min</span>
               </div>
             </div>
             
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>{data.seconds}</span>
-                <span className={`text-xs font-medium ${labelColor}`}>Seg</span>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden group`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative`}>{data.seconds}</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Seg</span>
               </div>
             </div>
           </div>
           
           {/* Barra de progresso */}
           {'progress' in data && (
-            <div className="mt-2 space-y-1">
+            <div className="mt-4 space-y-1.5">
               <div className="flex justify-between text-xs font-medium">
-                <span className={labelColor}>Progresso</span>
-                <span className={titleColor}>{Math.round(data.progress || 0)}%</span>
+                <span className={`${labelColor} font-semibold`}>Progresso</span>
+                <span className={`${titleColor} bg-indigo-100/50 dark:bg-indigo-900/50 px-2 py-0.5 rounded-full font-semibold`}>{Math.round(data.progress || 0)}%</span>
               </div>
-              <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-2.5 w-full bg-slate-100/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner p-0.5">
                 <div 
-                  className={`h-full bg-gradient-to-r ${progressColors} rounded-full transition-all duration-500 ease-in-out`}
+                  className={`h-full bg-gradient-to-r ${progressColors} rounded-full transition-all duration-500 ease-in-out relative`}
                   style={{ width: `${data.progress || 0}%` }} 
-                />
+                >
+                  <div className="absolute top-0 left-0 right-0 bottom-0 bg-white/20 dark:bg-white/10 rounded-full"></div>
+                </div>
               </div>
             </div>
           )}
           
           {/* Informação adicional - só mostra nos cards principais ou quando não há outra informação */}
           {'totalDays' in data && showWeeks && isMain && (
-            <div className={`mt-2 ${pillColor} text-center rounded-md py-1 px-2 text-xs font-medium`}>
-              Total: {data.totalDays} dias ({data.weeks} semanas e {data.days} dias)
+            <div className={`mt-3 ${pillColor} text-center rounded-md py-1.5 px-3 text-xs font-medium shadow-sm border border-indigo-200/70 dark:border-indigo-800/30 backdrop-blur-sm`}>
+              <span className="text-indigo-900 dark:text-indigo-300 font-semibold">Total:</span> {data.totalDays} dias ({data.weeks} semanas e {data.days} dias)
             </div>
           )}
         </div>
@@ -546,47 +553,53 @@ export default function Home() {
         {/* Conteúdo do card */}
         <div className={contentPadding}>
           {/* Contadores de tempo */}
-          <div className="grid grid-cols-4 gap-1.5 text-center">
+          <div className="grid grid-cols-4 gap-2 text-center">
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>{totalDays}</span>
-                <span className={`text-xs font-medium ${labelColor}`}>Dias</span>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative`}>{totalDays}</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Dias</span>
               </div>
             </div>
             
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>{countdown.hours}</span>
-                <span className={`text-xs font-medium ${labelColor}`}>Hrs</span>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative`}>{countdown.hours}</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Horas</span>
               </div>
             </div>
             
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>{countdown.minutes}</span>
-                <span className={`text-xs font-medium ${labelColor}`}>Min</span>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative`}>{countdown.minutes}</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Min</span>
               </div>
             </div>
             
             <div className="flex flex-col items-center justify-center">
-              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full`}>
-                <span className={`${numberSize} font-bold ${numberColor}`}>{countdown.seconds}</span>
-                <span className={`text-xs font-medium ${labelColor}`}>Seg</span>
+              <div className={`${pillColor} ${pillPadding} rounded-lg flex flex-col items-center justify-center w-full shadow-inner border border-indigo-200/50 dark:border-indigo-800/30 backdrop-blur-sm relative overflow-hidden`}>
+                <div className="absolute inset-0 bg-gradient-to-b from-white/30 to-transparent dark:from-white/5 dark:to-transparent"></div>
+                <span className={`${numberSize} font-bold ${numberColor} relative ${isMain ? 'group-hover:animate-pulse' : ''}`}>{countdown.seconds}</span>
+                <span className={`text-xs font-medium ${labelColor} relative`}>Seg</span>
               </div>
             </div>
           </div>
           
           {/* Barra de progresso */}
-          <div className="mt-2 space-y-1">
+          <div className="mt-4 space-y-1.5">
             <div className="flex justify-between text-xs font-medium">
-              <span className={labelColor}>Progresso</span>
-              <span className={titleColor}>{Math.round(countdown.progress)}%</span>
+              <span className={`${labelColor} font-semibold`}>Progresso</span>
+              <span className={`${titleColor} bg-indigo-100/50 dark:bg-indigo-900/50 px-2 py-0.5 rounded-full font-semibold`}>{Math.round(countdown.progress)}%</span>
             </div>
-            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div className="h-2.5 w-full bg-slate-100/70 dark:bg-slate-800/70 rounded-full overflow-hidden shadow-inner p-0.5">
               <div 
-                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out"
-                style={{ width: `${countdown.progress}%` }} 
-              />
+                className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500 ease-in-out relative"
+                style={{ width: `${countdown.progress || 0}%` }} 
+              >
+                <div className="absolute top-0 left-0 right-0 bottom-0 bg-white/20 dark:bg-white/10 rounded-full"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -679,7 +692,8 @@ export default function Home() {
   const allowGuesses = !babyBorn && appSettings?.allowGuesses !== false;
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col">
+    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col font-sans">
+      {/* Container principal com padding superior para separar da navbar */}
       {/* Botão fixo para adicionar palpite */}
       {allowGuesses && (
         <div className="fixed bottom-6 right-6 z-50">
@@ -693,32 +707,46 @@ export default function Home() {
         </div>
       )}
 
-      <header className="mb-6 md:mb-8 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-indigo-700 dark:text-indigo-400 mb-2 animate-fade-in">
+      <header className="pt-12 md:pt-16 lg:pt-20 pb-8 md:pb-10 px-4 text-center relative overflow-hidden">
+        {/* Efeito decorativo de fundo */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-72 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 rounded-[100%] blur-3xl -z-10 transform -translate-y-1/3"></div>
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mb-2 animate-fade-in">
           Contador de Palpites
         </h1>
-        <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300">
-          Nascimento da {appSettings?.babyName || 'Chloe'}
-        </p>
+        
+        <div className="mt-5 mb-4">
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight inline-block">
+            <span className="bg-gradient-to-r from-indigo-200 to-purple-200 dark:from-indigo-900/50 dark:to-purple-900/50 px-5 py-1.5 rounded-full shadow-sm border border-indigo-300/30 dark:border-indigo-700/30">
+              {appSettings?.babyName || 'Chloe'}
+            </span>
+          </h2>
+        </div>
+
+        {/* Divider decorativo */}
+        <div className="flex items-center justify-center my-8">
+          <div className="h-px w-24 md:w-32 bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-700 to-transparent"></div>
+          <div className="mx-3 text-lg text-indigo-400 dark:text-indigo-500">✦</div>
+          <div className="h-px w-24 md:w-32 bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-700 to-transparent"></div>
+        </div>
 
         {/* Componente para exibir o valor total do prêmio */}
         {(closestGuess?.guess || nextGuesses.length > 0) && (
-          <div className="mt-4 relative mx-auto max-w-xs">
+          <div className="relative mx-auto max-w-xs">
             <Popover>
               <PopoverTrigger asChild>
-                <div className="bg-gradient-to-r from-amber-400/90 to-yellow-500/90 dark:from-amber-500/80 dark:to-yellow-600/80 rounded-lg px-4 py-3 shadow-lg border border-amber-300 dark:border-amber-700/50 transform hover:scale-105 transition-transform cursor-pointer">
+                <div className="bg-gradient-to-br from-amber-400/90 via-yellow-500/90 to-amber-600/90 dark:from-amber-500/80 dark:via-yellow-600/80 dark:to-amber-700/80 rounded-2xl px-6 py-5 shadow-xl border border-amber-300 dark:border-amber-700/50 transform hover:scale-105 transition-all duration-300 cursor-pointer backdrop-blur-sm hover:shadow-amber-300/30 dark:hover:shadow-amber-700/30">
                   <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm font-semibold text-amber-900 dark:text-amber-100">Prêmio Total</span>
-                      <InfoIcon className="h-3.5 w-3.5 text-amber-700 dark:text-amber-300 animate-pulse" />
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-semibold text-amber-900 dark:text-amber-100 uppercase tracking-wide">Prêmio Total</span>
+                      <InfoIcon className="h-4 w-4 text-amber-700 dark:text-amber-300 animate-pulse" />
                     </div>
-                    <div className="flex items-baseline">
-                      <span className="text-2xl md:text-3xl font-bold text-amber-900 dark:text-white">
+                    <div className="flex items-baseline mt-1">
+                      <span className="text-3xl md:text-4xl font-bold text-amber-900 dark:text-white">
                         R$ {(totalGuessCount * (appSettings?.guessPrice || 10)).toFixed(2).replace('.', ',')}
                       </span>
                       <span className="ml-1 text-xs font-medium text-amber-800 dark:text-amber-200">,00</span>
                     </div>
-                    <p className="text-xs text-amber-800/90 dark:text-amber-200/90 mt-1">
+                    <p className="text-xs text-amber-800/90 dark:text-amber-200/90 mt-2 bg-amber-200/30 dark:bg-amber-800/30 px-3 py-1 rounded-full">
                       {totalGuessCount} palpites x R$ {(appSettings?.guessPrice || 10).toFixed(2).replace('.', ',')}
                     </p>
                   </div>
@@ -755,9 +783,10 @@ export default function Home() {
         )}
       </header>
 
-      {babyBorn ? (
+      <div className="container mx-auto px-4 py-6">
+        {babyBorn ? (
         // Exibição quando o bebê já nasceu
-        <div className="w-full max-w-5xl mx-auto space-y-6">
+        <div className="w-full max-w-5xl mx-auto space-y-8">
           <Card className="w-full bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/50 dark:to-purple-950/50 shadow-lg border-indigo-200 dark:border-indigo-800">
             <CardHeader className="py-4 px-6">
               <CardTitle className="text-2xl text-center text-indigo-700 dark:text-indigo-400">
@@ -815,52 +844,233 @@ export default function Home() {
         </div>
       ) : (
         // Exibição quando o bebê ainda não nasceu
-        <div className="w-full max-w-6xl mx-auto space-y-4 md:space-y-6">
-          {/* Seção superior: Countdown e Idade Gestacional - cards menores e com a mesma altura */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 max-w-3xl mx-auto">
-            {/* Countdown para data esperada */}
-            {expectedBirthCountdown && (
-              <div className="transform transition-all duration-300 h-full">
-                {renderTimeDisplay(
-                  expectedBirthCountdown, 
-                  "Data Provável de Nascimento", 
-                  `Nascimento: ${appSettings?.expectedBirthDate ? 
-                    new Date(appSettings.expectedBirthDate.seconds * 1000).toLocaleDateString('pt-BR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                    }) : 'Não definida'}`,
-                  false,
-                  'countdown'
+        <div className="w-full max-w-6xl mx-auto space-y-8 md:space-y-10">
+          {/* Novo formato para contadores principais sempre visíveis */}
+          <div className="relative z-10">
+            {/* Painel de contadores fixo */}
+            <div className="sticky top-20 transform transition-all duration-300 mb-14">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 max-w-4xl mx-auto">
+                {/* Efeito decorativo de brilho para destacar a área dos cards */}
+                <div className="absolute -inset-10 bg-gradient-to-r from-indigo-500/5 via-purple-500/10 to-indigo-500/5 rounded-[50%] blur-3xl -z-10 opacity-90"></div>
+              
+                {/* Countdown para data esperada */}
+                {expectedBirthCountdown && (
+                  <div className="transform hover:-translate-y-1 transition-all duration-300 h-full">
+                    <div className="rounded-2xl overflow-hidden shadow-lg border border-indigo-200/50 dark:border-indigo-800/30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md">
+                      {/* Cabeçalho colorido */}
+                      <div className="bg-gradient-to-r from-indigo-500 to-purple-500 py-3 px-4 text-center">
+                        <h3 className="font-bold text-white text-lg">Data Provável de Nascimento</h3>
+                        <p className="text-xs text-white/80 mt-1">
+                          {appSettings?.expectedBirthDate ? 
+                            new Date(appSettings.expectedBirthDate.seconds * 1000).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric',
+                            }) : 'Não definida'}
+                        </p>
+                      </div>
+                      
+                      {/* Contadores */}
+                      <div className="p-5">
+                        <div className="grid grid-cols-5 gap-3 text-center">
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{expectedBirthCountdown.weeks}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sem</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{expectedBirthCountdown.days}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Dias</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{expectedBirthCountdown.hours}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hrs</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">{expectedBirthCountdown.minutes}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Min</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-indigo-50 to-white dark:from-indigo-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 animate-pulse">{expectedBirthCountdown.seconds}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Seg</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Barra de progresso */}
+                        <div className="mt-4">
+                          <div className="flex justify-between text-xs font-medium mb-1">
+                            <span className="text-slate-600 dark:text-slate-400">Progresso</span>
+                            <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded-full font-medium">{Math.round(expectedBirthCountdown.progress)}%</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style={{ width: `${expectedBirthCountdown.progress || 0}%` }}></div>
+                          </div>
+                        </div>
+                        
+                        {/* Informação adicional - Total de dias */}
+                        <div className="mt-3 bg-indigo-50/50 dark:bg-indigo-900/20 text-center rounded-md py-1.5 px-3 text-xs font-medium border border-indigo-100 dark:border-indigo-800/30">
+                          <span className="text-indigo-700 dark:text-indigo-300 font-semibold">Total:</span> {Math.floor((expectedBirthCountdown.weeks || 0) * 7 + (expectedBirthCountdown.days || 0))} dias
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Idade Gestacional (baseada na DUM) */}
+                {gestationalAge && appSettings?.lastMenstruationDate && (
+                  <div className="transform hover:-translate-y-1 transition-all duration-300 h-full">
+                    <div className="rounded-2xl overflow-hidden shadow-lg border border-blue-200/50 dark:border-blue-800/30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md">
+                      {/* Cabeçalho colorido */}
+                      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 py-3 px-4 text-center">
+                        <h3 className="font-bold text-white text-lg">Idade Gestacional</h3>
+                        <p className="text-xs text-white/80 mt-1">
+                          DUM (Data da Última Menstruação): {new Date(appSettings.lastMenstruationDate.seconds * 1000).toLocaleDateString('pt-BR', {
+                            day: '2-digit',
+                            month: 'long'
+                          })}
+                        </p>
+                      </div>
+                      
+                      {/* Contadores */}
+                      <div className="p-5">
+                        <div className="grid grid-cols-5 gap-3 text-center">
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{gestationalAge.weeks}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sem</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{gestationalAge.days}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Dias</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{gestationalAge.hours}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hrs</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{gestationalAge.minutes}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Min</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 animate-pulse">{gestationalAge.seconds}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Seg</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Barra de progresso */}
+                        <div className="mt-4">
+                          <div className="flex justify-between text-xs font-medium mb-1">
+                            <span className="text-slate-600 dark:text-slate-400">Progresso</span>
+                            <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full font-medium">{Math.round(gestationalAge.progress || 0)}%</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" style={{ width: `${gestationalAge.progress || 0}%` }}></div>
+                          </div>
+                        </div>
+                        
+                        {/* Informação adicional */}
+                        <div className="mt-3 bg-blue-50/50 dark:bg-blue-900/20 text-center rounded-md py-1.5 px-3 text-xs font-medium border border-blue-100 dark:border-blue-800/30">
+                          <span className="text-blue-700 dark:text-blue-300 font-semibold">Total:</span> {gestationalAge.totalDays} dias
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
-            )}
-            
-            {/* Idade Gestacional (baseada na DUM) */}
-            {gestationalAge && appSettings?.lastMenstruationDate && (
-              <div className="transform transition-all duration-300 h-full">
-                {renderTimeDisplay(
-                  gestationalAge, 
-                  "Idade Gestacional", 
-                  `DUM: ${new Date(appSettings.lastMenstruationDate.seconds * 1000).toLocaleDateString('pt-BR', {
-                    day: '2-digit',
-                    month: '2-digit'
-                  })}`,
-                  false,
-                  'gestational'
-                )}
-              </div>
-            )}
+            </div>
+          
           </div>
           
           {/* Palpite mais próximo em destaque - card maior e mais destacado */}
           {closestGuess?.guess && (
-            <div className="mt-8">
-              <div className="transform transition-all duration-300">
+            <div className="mt-14 mb-8 relative">
+              <h2 className="text-center text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 mb-6">
+                Palpite Mais Próximo
+                <div className="mt-2 mx-auto w-24 h-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-full"></div>
+              </h2>
+              
+              {/* Efeito decorativo para dar mais destaque */}
+              <div className="absolute -inset-10 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-[30%] blur-3xl -z-10"></div>
+              <div className="transform hover:-translate-y-1 transition-all duration-300">
                 <div className="max-w-4xl mx-auto relative">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-indigo-400 to-purple-400 dark:from-indigo-700 dark:to-purple-600 rounded-xl blur-sm opacity-50"></div>
+                  <div className="absolute -inset-1.5 bg-gradient-to-r from-amber-400 to-orange-400 dark:from-amber-700 dark:to-orange-600 rounded-xl blur-md opacity-60 animate-pulse"></div>
                   <div className="relative">
-                    {renderCountdown(closestGuess.guess, true)}
+                    <div className="rounded-2xl overflow-hidden shadow-lg border border-amber-200/50 dark:border-amber-800/30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md">
+                      {/* Cabeçalho colorido */}
+                      <div className="bg-gradient-to-r from-amber-500 to-orange-500 py-3 px-4">
+                        <div className="flex flex-col">
+                          <h3 className="font-bold text-white text-lg truncate">
+                            {closestGuess.guess.userName} <span className="ml-1 text-xs font-medium px-2 py-0.5 bg-white/20 rounded-full">Mais próximo</span>
+                          </h3>
+                          <p className="text-xs text-white/80 mt-1">
+                            Palpite: {new Date(closestGuess.guess.guessDate.seconds * 1000).toLocaleDateString('pt-BR', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Contadores */}
+                      <div className="p-5">
+                        <div className="grid grid-cols-4 gap-3 text-center">
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{countdowns[closestGuess.guess.id] ? Math.floor(countdowns[closestGuess.guess.id].weeks * 7 + countdowns[closestGuess.guess.id].days) : 0}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Dias</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{countdowns[closestGuess.guess.id]?.hours || 0}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Hrs</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{countdowns[closestGuess.guess.id]?.minutes || 0}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Min</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-900/80 shadow rounded-lg p-2 relative">
+                              <div className="text-2xl font-bold text-amber-600 dark:text-amber-400 animate-pulse">{countdowns[closestGuess.guess.id]?.seconds || 0}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">Seg</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Barra de progresso */}
+                        <div className="mt-4">
+                          <div className="flex justify-between text-xs font-medium mb-1">
+                            <span className="text-slate-600 dark:text-slate-400">Progresso</span>
+                            <span className="bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full font-medium">{Math.round(countdowns[closestGuess.guess.id]?.progress || 0)}%</span>
+                          </div>
+                          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full" style={{ width: `${countdowns[closestGuess.guess.id]?.progress || 0}%` }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -869,7 +1079,14 @@ export default function Home() {
           
           {/* Próximos palpites */}
           {nextGuesses.length > 0 && (
-            <div className="space-y-4 mt-8">
+            <div className="space-y-6 mt-16 relative">
+              <h2 className="text-center text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 dark:from-violet-400 dark:to-purple-400 mb-6">
+                Próximos Palpites
+                <div className="mt-2 mx-auto w-24 h-1 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"></div>
+              </h2>
+              
+              {/* Efeito decorativo para esta seção */}
+              <div className="absolute -inset-10 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-[40%] blur-3xl -z-10"></div>
               <div className={`grid grid-cols-1 sm:grid-cols-2 ${
                 nextGuesses.length === 1 ? 'md:grid-cols-1 max-w-md' :
                 nextGuesses.length === 2 ? 'md:grid-cols-2 max-w-2xl' :
@@ -886,42 +1103,56 @@ export default function Home() {
           )}
           
           {/* Botão para ver todos os palpites */}
-          <div className="flex justify-center mt-10">
-            <Link href="/guesses">
-              <Button className="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white cursor-pointer">
-                <Eye className="mr-2 h-4 w-4" />
-                Ver todos os palpites
-              </Button>
-            </Link>
+          <div className="mt-16 mb-10 relative">
+            {/* Barra decorativa superior */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
             
-            {user && (
-              <Link href="/my-guesses" className="ml-3">
-                <Button variant="outline" className="border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 cursor-pointer">
-                  <UserRound className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  Meus Palpites
-                </Button>
-              </Link>
-            )}
+            <div className="py-8 px-4 rounded-2xl bg-gradient-to-b from-slate-50/30 to-transparent dark:from-slate-900/30 dark:to-transparent backdrop-blur-sm mt-6">
+              <h3 className="text-center font-medium text-slate-700 dark:text-slate-300 mb-6">Opções Disponíveis</h3>
+              
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Link href="/guesses" className="w-full sm:w-auto">
+                  <Button className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white cursor-pointer shadow-md w-full sm:w-auto" size="lg">
+                    <Eye className="mr-2 h-4 w-4" />
+                    Ver todos os palpites
+                  </Button>
+                </Link>
+                
+                {user && (
+                  <Link href="/my-guesses" className="w-full sm:w-auto">
+                    <Button variant="outline" className="border-indigo-300 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/40 cursor-pointer shadow-sm w-full sm:w-auto" size="lg">
+                      <UserRound className="mr-2 h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                      Meus Palpites
+                    </Button>
+                  </Link>
+                )}
+                
+                {allowGuesses && (
+                  <Button 
+                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 cursor-pointer shadow-md w-full sm:w-auto"
+                    onClick={() => setGuessFormOpen(true)}
+                    size="lg"
+                  >
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    Adicionar Palpite
+                  </Button>
+                )}
+              </div>
+            </div>
             
-            {allowGuesses && (
-              <Button 
-                className="ml-3 bg-purple-600 hover:bg-purple-700 cursor-pointer"
-                onClick={() => setGuessFormOpen(true)}
-              >
-                <PlusIcon className="mr-2 h-4 w-4" />
-                Adicionar Palpite
-              </Button>
-            )}
+            {/* Barra decorativa inferior */}
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-200 dark:via-slate-700 to-transparent"></div>
           </div>
         </div>
       )}
-      
+
       {/* Modal de palpite */}
       <GuessForm
         open={guessFormOpen}
         onOpenChange={setGuessFormOpen}
         onSuccess={refreshData}
       />
+      </div>
     </main>
   );
 }
