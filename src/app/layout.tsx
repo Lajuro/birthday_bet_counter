@@ -19,6 +19,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Contador de Palpites - Nascimento da Chloe",
   description: "Registre seu palpite para o nascimento da Chloe e acompanhe a contagem regressiva",
+  icons: {
+    icon: [{ url: "/logo_fill.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/logo_fill.svg", type: "image/svg+xml" }],
+  },
+  manifest: "/manifest.json"
 };
 
 export default function RootLayout({
