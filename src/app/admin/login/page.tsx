@@ -16,6 +16,7 @@ import { loginWithGoogle } from "@/lib/firebase/auth";
 import { toast } from 'sonner';
 import { getUserProfile } from "@/lib/firebase/firestore";
 import { useAuth } from '@/contexts/auth-context';
+import { debug } from '@/lib/debug';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,7 +95,7 @@ export default function LoginPage() {
       // Redirecionar para a página inicial após o login bem-sucedido
       router.push("/");
     } catch (err: unknown) {
-      console.error("Erro ao fazer login:", err);
+      debug.error('admin', 'Erro ao fazer login:', err);
       
       // Lidar com erros de autenticação
       let errorMessage = "Ocorreu um erro durante o login. Tente novamente.";
@@ -133,14 +134,14 @@ export default function LoginPage() {
       } else if (user) {
         toast.success('Login realizado com sucesso!');
         
-        console.log("É o primeiro usuário?", isFirstUser);
+        debug.log("auth", "É o primeiro usuário?", isFirstUser);
         
         // Esperar para garantir que o documento do usuário seja criado primeiro
         await new Promise((resolve) => setTimeout(resolve, 500));
         
         // Se for o primeiro usuário, forçar status de admin no contexto
         if (isFirstUser) {
-          console.log("Forçando status de admin para o primeiro usuário");
+          debug.log("auth", "Forçando status de admin para o primeiro usuário");
           forceAdminStatus();
         }
         
@@ -149,17 +150,17 @@ export default function LoginPage() {
         
         // Verificar novamente o status e perfil
         const currentUserProfile = await getUserProfile(user.uid);
-        console.log("Perfil final antes do redirecionamento:", currentUserProfile);
+        debug.log("auth", "Perfil final antes do redirecionamento:", currentUserProfile);
         
         // Aguardar mais um momento para que a UI seja atualizada
         await new Promise((resolve) => setTimeout(resolve, 300));
         
         // Redirecionar para a página principal
-        console.log("Redirecionando para a página principal...");
+        debug.log("auth", "Redirecionando para a página principal...");
         router.push('/');
       }
     } catch (error) {
-      console.error('Erro inesperado:', error);
+      debug.error('admin', 'Erro inesperado:', error);
       setError('Ocorreu um erro inesperado ao tentar fazer login.');
       toast.error('Erro no login', {
         description: 'Ocorreu um erro inesperado ao tentar fazer login.',

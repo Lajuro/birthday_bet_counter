@@ -14,6 +14,7 @@ import {
 import { FirebaseError } from 'firebase/app';
 import { doc, getDoc, setDoc, serverTimestamp, updateDoc, collection, query, limit, getDocs } from 'firebase/firestore';
 import { auth, db } from './config';
+import { debug } from '@/lib/debug';
 
 // Interface para os erros de autenticação
 export interface AuthErrorResponse {
@@ -96,7 +97,7 @@ export const registerWithEmail = async (email: string, password: string, display
         });
       }
     } catch (firestoreError) {
-      console.error("Erro ao criar documento do usuário:", firestoreError);
+      debug.error('auth', 'Erro ao criar documento do usuário:', firestoreError);
       // Mesmo com erro no Firestore, o usuário foi criado no Authentication
     }
     
@@ -140,9 +141,9 @@ export const createAdminUserDocument = async (user: User, additionalData: UserDa
       firstUserCreatedAt: serverTimestamp()
     });
     
-    console.log("Usuário admin criado com sucesso:", user.uid);
+    debug.log("auth", "Usuário admin criado com sucesso:", user.uid);
   } catch (error) {
-    console.error("Erro ao criar documento do admin:", error);
+    debug.error('auth', 'Erro ao criar documento do admin:', error);
     throw error;
   }
 };
@@ -162,9 +163,9 @@ export const registerPendingUser = async (user: User, userData: PendingUserData)
       createdAt: serverTimestamp()
     });
     
-    console.log("Usuário pendente registrado para aprovação:", user.uid);
+    debug.log("auth", "Usuário pendente registrado para aprovação:", user.uid);
   } catch (error) {
-    console.error("Erro ao registrar usuário pendente:", error);
+    debug.error('auth', 'Erro ao registrar usuário pendente:', error);
   }
 };
 
@@ -186,11 +187,11 @@ export const createUserDocument = async (user: User, additionalData: UserData): 
       };
       
       // Não incluímos isAdmin ou status aqui para respeitar as regras
-      console.log(`Criando usuário básico no Firestore: ${user.uid}`);
+      debug.log("auth", `Criando usuário básico no Firestore: ${user.uid}`);
       await setDoc(userRef, basicUserData);
     }
   } catch (error) {
-    console.error("Erro ao criar documento básico do usuário:", error);
+    debug.error('auth', 'Erro ao criar documento básico do usuário:', error);
     throw error;
   }
 };
@@ -198,11 +199,11 @@ export const createUserDocument = async (user: User, additionalData: UserData): 
 // Função para login com Google
 export const loginWithGoogle = async (): Promise<AuthResponse> => {
   try {
-    console.log("Iniciando login com Google...");
+    debug.log("auth", "Iniciando login com Google...");
     
     const provider = new GoogleAuthProvider();
     const userCredential = await signInWithPopup(auth, provider);
-    console.log("Autenticação com Google bem-sucedida:", userCredential.user.uid);
+    debug.log("auth", "Autenticação com Google bem-sucedida:", userCredential.user.uid);
     
     // Verificar se o usuário já existe no Firestore
     try {
@@ -214,11 +215,11 @@ export const loginWithGoogle = async (): Promise<AuthResponse> => {
       
       // Se não existir, criar o documento do usuário
       if (!userDoc.exists()) {
-        console.log("Usuário não existe no Firestore, vamos criar:", userCredential.user.uid);
+        debug.log("auth", "Usuário não existe no Firestore, vamos criar:", userCredential.user.uid);
         
         // Verificar se é o primeiro usuário
         isFirstUser = await isFirstUserRegistration();
-        console.log("É o primeiro usuário?", isFirstUser);
+        debug.log("auth", "É o primeiro usuário?", isFirstUser);
         
         // Preparar dados do usuário
         const userData: UserData = {
@@ -233,25 +234,25 @@ export const loginWithGoogle = async (): Promise<AuthResponse> => {
           status: isFirstUser ? 'approved' : 'pending',
         };
         
-        console.log("Dados do usuário a serem criados:", userData);
+        debug.log("auth", "Dados do usuário a serem criados:", userData);
         
         // Criar documento do usuário
         await setDoc(userRef, userData);
-        console.log("Documento do usuário criado com sucesso.");
+        debug.log("auth", "Documento do usuário criado com sucesso.");
         
         // Se for o primeiro usuário, atualizar stats do sistema
         if (isFirstUser) {
           await updateSystemStats();
-          console.log("Stats do sistema atualizados.");
+          debug.log("auth", "Stats do sistema atualizados.");
         }
       } else {
-        console.log("Usuário já existe no Firestore:", userCredential.user.uid);
+        debug.log("auth", "Usuário já existe no Firestore:", userCredential.user.uid);
         
         // Atualizar lastLogin
         await updateDoc(userRef, {
           lastLogin: serverTimestamp(),
         });
-        console.log("Último login atualizado.");
+        debug.log("auth", "Último login atualizado.");
       }
       
       // Forçar uma atualização do perfil do usuário no context
@@ -264,7 +265,7 @@ export const loginWithGoogle = async (): Promise<AuthResponse> => {
         isFirstUser,
       };
     } catch (firestoreError) {
-      console.error("Erro ao interagir com Firestore:", firestoreError);
+      debug.error('auth', 'Erro ao interagir com Firestore:', firestoreError);
       
       // Continuar com o login mesmo com erro no Firestore, mas reportar o erro
       return {
@@ -278,7 +279,7 @@ export const loginWithGoogle = async (): Promise<AuthResponse> => {
       };
     }
   } catch (error) {
-    console.error("Erro no login com Google:", error);
+    debug.error('auth', 'Erro no login com Google:', error);
     
     const firebaseError = error as FirebaseError;
     return {
@@ -329,14 +330,14 @@ export const signOut = async (): Promise<{ success: boolean; error: AuthErrorRes
 // Verificar se é o primeiro usuário a se registrar
 export const isFirstUserRegistration = async (): Promise<boolean> => {
   try {
-    console.log("Verificando se é o primeiro usuário...");
+    debug.log("auth", "Verificando se é o primeiro usuário...");
     
     // Método 1: Verificar documento de estatísticas
     const statsRef = doc(db, 'system', 'stats');
     const statsDoc = await getDoc(statsRef);
     
     if (statsDoc.exists()) {
-      console.log("Documento de estatísticas existe, não é o primeiro usuário");
+      debug.log("auth", "Documento de estatísticas existe, não é o primeiro usuário");
       return false;
     }
     
@@ -346,11 +347,11 @@ export const isFirstUserRegistration = async (): Promise<boolean> => {
     const usersSnapshot = await getDocs(usersQuery);
     
     const isEmpty = usersSnapshot.empty;
-    console.log("Collection users está vazia?", isEmpty);
+    debug.log("auth", "Collection users está vazia?", isEmpty);
     
     return isEmpty;
   } catch (error) {
-    console.error("Erro ao verificar se é o primeiro usuário:", error);
+    debug.error('auth', 'Erro ao verificar se é o primeiro usuário:', error);
     // Em caso de erro, retorna false por segurança
     return false;
   }
@@ -368,7 +369,7 @@ export const updateUserDocument = async (userId: string, data: UserData): Promis
       updatedAt: serverTimestamp()
     });
   } catch (error: unknown) {
-    console.error("Erro ao atualizar documento do usuário:", error);
+    debug.error('auth', 'Erro ao atualizar documento do usuário:', error);
     throw error;
   }
 };
@@ -456,6 +457,6 @@ export const updateSystemStats = async () => {
       });
     }
   } catch (error) {
-    console.error("Erro ao atualizar estatísticas do sistema:", error);
+    debug.error('auth', 'Erro ao atualizar estatísticas do sistema:', error);
   }
 };

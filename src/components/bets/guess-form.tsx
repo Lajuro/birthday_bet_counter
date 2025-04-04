@@ -19,6 +19,7 @@ import { AppSettings } from '@/types';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { formatPhoneNumber } from '@/lib/utils';
+import { debug } from '@/lib/debug';
 
 interface GuessFormProps {
   open?: boolean;
@@ -42,7 +43,7 @@ export function GuessForm({ open, onOpenChange }: GuessFormProps) {
         }
         setLoading(false);
       } catch (error) {
-        console.error("Erro ao buscar configurações:", error);
+        debug.error('ui', 'Erro ao buscar configurações:', error);
         setLoading(false);
       }
     }

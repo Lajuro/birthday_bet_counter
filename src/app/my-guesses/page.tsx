@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
+import { debug } from '@/lib/debug';
 
 export default function MyGuessesPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -53,7 +54,7 @@ export default function MyGuessesPage() {
         
         setMyGuesses(sortedGuesses);
       } catch (error) {
-        console.error("Erro ao carregar dados:", error);
+        debug.error('app', 'Erro ao carregar dados:', error);
         toast.error("Não foi possível carregar seus palpites");
       } finally {
         setIsLoading(false);

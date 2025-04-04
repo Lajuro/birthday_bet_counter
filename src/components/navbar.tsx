@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { getAppSettings } from '@/lib/firebase/firestore';
 import { AppSettings } from '@/types';
+import { DebugToggle } from '@/components/debug-toggle';
+import { debug } from '@/lib/debug';
 
 export function Navbar() {
   const { user, userProfile, refreshUserProfile, isAdmin } = useAuth();
@@ -22,10 +24,10 @@ export function Navbar() {
   // Efeito para verificar se o userProfile está atualizado
   useEffect(() => {
     if (user && !userProfile) {
-      console.log("Navbar: Usuário existe mas perfil não carregado, atualizando...");
+      debug.log("ui", "Navbar: Usuário existe mas perfil não carregado, atualizando...");
       refreshUserProfile();
     } else if (user && userProfile) {
-      console.log("Navbar: Perfil do usuário carregado:", userProfile);
+      debug.log("ui", "Navbar: Perfil do usuário carregado:", userProfile);
     }
   }, [user, userProfile, refreshUserProfile]);
 
@@ -38,7 +40,7 @@ export function Navbar() {
           setAppSettings(settings);
         }
       } catch (error) {
-        console.error("Erro ao carregar configurações da aplicação:", error);
+        debug.error('app', 'Erro ao carregar configurações da aplicação:', error);
       }
     };
     
@@ -46,7 +48,7 @@ export function Navbar() {
   }, []);
 
   // Adicionar log para debug
-  console.log("Navbar renderizada. É admin?", isAdmin, "UserProfile:", userProfile);
+  debug.log("ui", "Navbar renderizada. É admin?", isAdmin, "UserProfile:", userProfile);
 
   const handleLogout = async () => {
     try {
@@ -115,6 +117,12 @@ export function Navbar() {
                     Todos os Palpites
                   </Button>
                 </Link>
+                
+                {/* Toggle de Debug */}
+                <div className="mr-4">
+                  <DebugToggle />
+                </div>
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button 
@@ -261,6 +269,10 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
           <div className="space-y-1 px-4 py-3">
+            {/* Toggle de Debug (mobile) */}
+            <div className="flex items-center px-3 py-2 mb-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+              <DebugToggle />
+            </div>
             {user && (
               <div className="flex items-center space-x-3 px-3 py-2 mb-2">
                 <Avatar className="h-10 w-10 border border-indigo-200 dark:border-indigo-800">

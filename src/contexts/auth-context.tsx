@@ -5,6 +5,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 import { getUserProfile } from '@/lib/firebase/firestore';
 import type { UserProfile } from '@/types';
+import { debug } from '@/lib/debug';
 
 interface AuthContextProps {
   user: User | null;
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Função para forçar status de admin (usado após login do primeiro usuário)
   const forceAdminStatus = () => {
-    console.log("Forçando status de admin no contexto");
+    debug.log("auth", "Forçando status de admin no contexto");
     setIsAdmin(true);
     if (userProfile) {
       setUserProfile({
@@ -50,21 +51,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refreshUserProfile = async () => {
     if (user) {
       setIsLoadingProfile(true);
-      console.log("AuthContext: Atualizando perfil do usuário:", user.uid);
+      debug.log("auth", "AuthContext: Atualizando perfil do usuário:", user.uid);
       
       try {
         const profile = await getUserProfile(user.uid);
-        console.log("AuthContext: Perfil atualizado:", profile);
+        debug.log("auth", "AuthContext: Perfil atualizado:", profile);
         
         if (profile) {
           setUserProfile(profile);
           setIsAdmin(!!profile.isAdmin);
-          console.log("AuthContext: Status de admin atualizado:", !!profile.isAdmin);
+          debug.log("auth", "AuthContext: Status de admin atualizado:", !!profile.isAdmin);
         } else {
-          console.log("AuthContext: Perfil não encontrado");
+          debug.log("auth", "AuthContext: Perfil não encontrado");
         }
       } catch (error) {
-        console.error("Erro ao atualizar perfil:", error);
+        debug.error('auth', 'Erro ao atualizar perfil:', error);
       } finally {
         setIsLoadingProfile(false);
       }
@@ -73,7 +74,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-      console.log("AuthContext: Estado de autenticação alterado:", authUser?.uid);
+      debug.log("auth", "AuthContext: Estado de autenticação alterado:", authUser?.uid);
       setUser(authUser);
       
       if (authUser) {
@@ -81,11 +82,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Buscar perfil do usuário no Firestore
         try {
           const profile = await getUserProfile(authUser.uid);
-          console.log("AuthContext: Perfil carregado inicialmente:", profile);
+          debug.log("auth", "AuthContext: Perfil carregado inicialmente:", profile);
           setUserProfile(profile);
           setIsAdmin(!!profile?.isAdmin);
         } catch (error) {
-          console.error("Erro ao carregar perfil:", error);
+          debug.error('auth', 'Erro ao carregar perfil:', error);
         } finally {
           setIsLoadingProfile(false);
         }

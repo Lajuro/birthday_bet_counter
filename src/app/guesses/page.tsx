@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeftIcon, CalendarIcon, ChatBubbleIcon, PlusIcon } from '@radix-ui/react-icons';
 import { toast } from 'sonner';
 import { GuessForm } from '@/components/bets/guess-form';
+import { debug } from '@/lib/debug';
 
 // Interface para os countdowns calculados
 interface CountdownData {
@@ -52,7 +53,7 @@ export default function GuessesPage() {
         setGuesses(fetchedGuesses);
         setAppSettings(settings);
       } catch (error) {
-        console.error('Erro ao carregar dados:', error);
+        debug.error('admin', 'Erro ao carregar dados:', error);
         toast.error('Erro ao carregar dados', {
           description: 'Não foi possível carregar os palpites. Tente novamente mais tarde.'
         });
@@ -194,7 +195,7 @@ export default function GuessesPage() {
       const fetchedGuesses = await getAllGuesses();
       setGuesses(fetchedGuesses);
     } catch (error) {
-      console.error('Erro ao atualizar palpites:', error);
+      debug.error('app', 'Erro ao atualizar palpites:', error);
     }
   };
 

@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { debug } from '@/lib/debug';
 import { 
   Users, 
   Trash2, 
@@ -177,7 +178,7 @@ export default function AdminPage() {
             setWinnerResult(winner);
           }
         } catch (error) {
-          console.error("Erro ao carregar dados:", error);
+          debug.error('admin', 'Erro ao carregar dados:', error);
           toast.error("Erro ao carregar dados", {
             description: "Não foi possível carregar as informações. Tente novamente mais tarde."
           });
@@ -297,7 +298,7 @@ export default function AdminPage() {
       setWinnerResult(winner);
       setShowWinnerResult(true);
     } catch (error) {
-      console.error('Erro ao atualizar data de nascimento:', error);
+      debug.error('admin', 'Erro ao atualizar data de nascimento:', error);
       toast.error('Erro ao atualizar data de nascimento.');
     } finally {
     }
@@ -333,7 +334,7 @@ export default function AdminPage() {
       // Limpar a data selecionada
       setActualBirthDate(undefined);
     } catch (error) {
-      console.error('Erro ao remover data de nascimento:', error);
+      debug.error('admin', 'Erro ao remover data de nascimento:', error);
       toast.error('Erro ao remover data de nascimento.');
     } finally {
     }
@@ -349,7 +350,7 @@ export default function AdminPage() {
       const updatedGuesses = guesses.filter(g => g.id !== guessId);
       setGuesses(updatedGuesses);
     } catch (error) {
-      console.error("Erro ao excluir palpite:", error);
+      debug.error('admin', 'Erro ao excluir palpite:', error);
       toast.error("Erro ao excluir palpite", {
         description: "Não foi possível excluir o palpite. Tente novamente mais tarde."
       });
@@ -380,7 +381,7 @@ export default function AdminPage() {
       );
       setUsers(updatedUsers);
     } catch (error) {
-      console.error("Erro ao atualizar usuário:", error);
+      debug.error('admin', 'Erro ao atualizar usuário:', error);
       toast.error("Erro ao atualizar usuário", {
         description: "Não foi possível atualizar as permissões do usuário. Tente novamente mais tarde."
       });
@@ -412,7 +413,7 @@ export default function AdminPage() {
         toast.error('Erro ao aprovar usuário.');
       }
     } catch (error) {
-      console.error('Erro ao aprovar usuário:', error);
+      debug.error('admin', 'Erro ao aprovar usuário:', error);
       toast.error('Erro ao aprovar usuário.');
     } finally {
       setProcessingAction(null);
@@ -440,7 +441,7 @@ export default function AdminPage() {
         toast.error('Erro ao rejeitar usuário.');
       }
     } catch (error) {
-      console.error('Erro ao rejeitar usuário:', error);
+      debug.error('admin', 'Erro ao rejeitar usuário:', error);
       toast.error('Erro ao rejeitar usuário.');
     } finally {
       setProcessingAction(null);
@@ -453,7 +454,7 @@ export default function AdminPage() {
       const allGuesses = await getAllGuesses();
       setGuesses(allGuesses);
     } catch (error) {
-      console.error("Erro ao buscar palpites:", error);
+      debug.error('admin', 'Erro ao buscar palpites:', error);
       toast.error("Não foi possível carregar os palpites");
     }
   };
@@ -568,7 +569,7 @@ export default function AdminPage() {
               }
             }
           } catch (jsonError) {
-            console.error("Erro ao processar JSON:", jsonError);
+            debug.error('admin', 'Erro ao processar JSON:', jsonError);
             toast.error("Formato de JSON inválido");
             setIsImportingFile(false);
             return;
@@ -645,7 +646,7 @@ export default function AdminPage() {
               success: prev.success + 1
             }));
           } catch (error) {
-            console.error(`Erro ao criar palpite para ${guess.name}:`, error);
+            debug.error('admin', `Erro ao criar palpite para ${guess.name}:`, error);
             errorCount++;
             setImportProgress(prev => ({
               ...prev,
@@ -678,7 +679,7 @@ export default function AdminPage() {
         await new Promise(resolve => setTimeout(resolve, 1500));
         
       } catch (error) {
-        console.error("Erro ao importar palpites:", error);
+        debug.error('admin', 'Erro ao importar palpites:', error);
         toast.error("Erro ao importar palpites do arquivo");
       } finally {
         // Limpar o input file
@@ -690,7 +691,7 @@ export default function AdminPage() {
     };
     
     reader.onerror = () => {
-      console.error("Erro ao ler o arquivo");
+      debug.error('admin', 'Erro ao ler o arquivo');
       toast.error("Erro ao ler o arquivo");
       setIsImportingFile(false);
     };
@@ -853,7 +854,7 @@ export default function AdminPage() {
         setIsGuessDialogOpen(false);
       }
     } catch (error: unknown) {
-      console.error("Erro ao criar palpite:", error);
+      debug.error('admin', 'Erro ao criar palpite:', error);
       
       if (error instanceof Error && error.message?.includes("já existe")) {
         toast.error("Este usuário já tem um palpite para esta data.");
@@ -900,7 +901,7 @@ export default function AdminPage() {
       
       toast.success("Palpite atualizado com sucesso!");
     } catch (error) {
-      console.error('Erro ao atualizar palpite:', error);
+      debug.error('admin', 'Erro ao atualizar palpite:', error);
       toast.error("Erro ao atualizar palpite. Tente novamente.");
     } finally {
       setIsCreatingGuess(false);
@@ -1821,9 +1822,9 @@ export default function AdminPage() {
                                   
                                   await updateAppSettings(updatedSettings);
                                   toast.success("Configurações atualizadas com sucesso");
-                                  console.log("Configurações atualizadas:", updatedSettings);
+                                  debug.log("admin", "Configurações atualizadas:", updatedSettings);
                                 } catch (error) {
-                                  console.error("Erro ao atualizar configurações:", error);
+                                  debug.error('admin', 'Erro ao atualizar configurações:', error);
                                   toast.error("Erro ao atualizar configurações");
                                 }
                               }}
@@ -2256,7 +2257,7 @@ export default function AdminPage() {
                       setGuesses(updatedGuesses);
                       setSelectedGuesses([]);
                     } catch (error) {
-                      console.error("Erro ao excluir palpites em massa:", error);
+                      debug.error('admin', 'Erro ao excluir palpites em massa:', error);
                       toast.error("Erro ao excluir palpites em massa");
                     } finally {
                       setIsDeletingMultiple(false);

@@ -12,6 +12,7 @@ import { Eye, ShieldAlert, CalendarClock, PlusIcon, InfoIcon, TrophyIcon, UserRo
 import { Timestamp } from 'firebase/firestore';
 import { GuessForm } from '@/components/bets/guess-form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { debug } from '@/lib/debug';
 
 // Interface para o resultado do getClosestGuess
 interface ClosestGuessResult {
@@ -103,7 +104,7 @@ export default function Home() {
         // Limpar qualquer erro anterior se tudo deu certo
         setError(null);
       } catch (error: unknown) {
-        console.error('Erro ao carregar dados:', error);
+        debug.error('app', 'Erro ao carregar dados:', error);
         
         // Verificar se é um erro de permissão do Firebase
         const fbError = error as FirebaseError;
@@ -140,7 +141,7 @@ export default function Home() {
         setNextGuesses(nextThreeGuesses);
       }
     } catch (error) {
-      console.error('Erro ao atualizar dados:', error);
+      debug.error('app', 'Erro ao atualizar dados:', error);
     }
   };
 
@@ -288,7 +289,7 @@ export default function Home() {
             newCountdowns[closestGuess.guess.id] = { weeks, days, hours, minutes, seconds, progress };
           }
         } catch (error) {
-          console.error("Erro ao calcular countdown para palpite mais próximo:", error);
+          debug.error('app', 'Erro ao calcular countdown para palpite mais próximo:', error);
           newCountdowns[closestGuess.guess.id] = { weeks: 0, days: 0, hours: 0, minutes: 0, seconds: 0, progress: 0 };
         }
       }
@@ -297,7 +298,7 @@ export default function Home() {
       nextGuesses.forEach(guess => {
         try {
           if (!guess || !guess.guessDate || !guess.guessDate.seconds) {
-            console.warn("Palpite com formato inválido:", guess);
+            debug.warn('app', 'Palpite com formato inválido:', guess);
             return;
           }
           
@@ -335,7 +336,7 @@ export default function Home() {
             newCountdowns[guess.id] = { weeks, days, hours, minutes, seconds, progress };
           }
         } catch (error) {
-          console.error("Erro ao calcular countdown para palpite:", guess.id, error);
+          debug.error('app', 'Erro ao calcular countdown para palpite:', guess.id, error);
           if (guess && guess.id) {
             newCountdowns[guess.id] = { weeks: 0, days: 0, hours: 0, minutes: 0, seconds: 0, progress: 0 };
           }

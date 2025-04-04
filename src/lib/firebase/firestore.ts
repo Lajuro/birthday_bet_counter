@@ -16,6 +16,7 @@ import {
 import { db } from './config';
 import type { BirthGuess, UserProfile, AppSettings } from '@/types';
 import { User } from 'firebase/auth';
+import { debug } from '@/lib/debug';
 
 // Re-exportar o serverTimestamp para uso em outros arquivos
 export const serverTimestamp = fbServerTimestamp;
@@ -34,7 +35,7 @@ export const getAllGuesses = async (): Promise<BirthGuess[]> => {
     
     return guesses;
   } catch (error) {
-    console.error('Erro ao buscar palpites:', error);
+    debug.error('firestore', 'Erro ao buscar palpites:', error);
     return [];
   }
 };
@@ -50,7 +51,7 @@ export const getGuessById = async (id: string): Promise<BirthGuess | null> => {
     
     return null;
   } catch (error) {
-    console.error('Erro ao buscar palpite:', error);
+    debug.error('firestore', 'Erro ao buscar palpite:', error);
     return null;
   }
 };
@@ -68,7 +69,7 @@ export const getUserGuesses = async (userId: string): Promise<BirthGuess[]> => {
     
     return guesses;
   } catch (error) {
-    console.error('Erro ao buscar palpites do usuário:', error);
+    debug.error('firestore', 'Erro ao buscar palpites do usuário:', error);
     return [];
   }
 };
@@ -142,7 +143,7 @@ export const createGuess = async (guess: Omit<BirthGuess, 'id' | 'createdAt' | '
       updatedAt: guessData.updatedAt as unknown as Timestamp
     };
   } catch (error) {
-    console.error('Erro ao criar palpite:', error);
+    debug.error('firestore', 'Erro ao criar palpite:', error);
     return null;
   }
 };
@@ -179,7 +180,7 @@ export const createBulkGuess = async (guess: Omit<BirthGuess, 'id' | 'createdAt'
       updatedAt: guessData.updatedAt as unknown as Timestamp
     };
   } catch (error) {
-    console.error('Erro ao criar palpite em massa:', error);
+    debug.error('firestore', 'Erro ao criar palpite em massa:', error);
     return null;
   }
 };
@@ -194,7 +195,7 @@ export const updateGuess = async (id: string, data: Partial<BirthGuess>): Promis
     
     return true;
   } catch (error) {
-    console.error('Erro ao atualizar palpite:', error);
+    debug.error('firestore', 'Erro ao atualizar palpite:', error);
     return false;
   }
 };
@@ -205,7 +206,7 @@ export const deleteGuess = async (id: string): Promise<boolean> => {
     await deleteDoc(doc(db, 'guesses', id));
     return true;
   } catch (error) {
-    console.error('Erro ao deletar palpite:', error);
+    debug.error('firestore', 'Erro ao deletar palpite:', error);
     return false;
   }
 };
@@ -222,7 +223,7 @@ export const deleteManyGuesses = async (ids: string[]): Promise<{ success: numbe
     
     return { success, failed };
   } catch (error) {
-    console.error('Erro ao deletar múltiplos palpites:', error);
+    debug.error('firestore', 'Erro ao deletar múltiplos palpites:', error);
     return { success: 0, failed: ids.length };
   }
 };
@@ -276,7 +277,7 @@ export const getClosestGuess = async (): Promise<{
     
     return null;
   } catch (error) {
-    console.error('Erro ao obter palpite mais próximo:', error);
+    debug.error('firestore', 'Erro ao obter palpite mais próximo:', error);
     return null;
   }
 };
@@ -304,7 +305,7 @@ export const getNextGuesses = async (count: number = 3): Promise<BirthGuess[]> =
     // Começamos do índice 1 para pular o primeiro palpite (que já é mostrado no destaque)
     return sortedGuesses.slice(1, count + 1);
   } catch (error) {
-    console.error('Erro ao buscar próximos palpites:', error);
+    debug.error('firestore', 'Erro ao buscar próximos palpites:', error);
     return [];
   }
 };
@@ -335,11 +336,11 @@ export const getAppSettings = async (): Promise<AppSettings | null> => {
     
     // Salvar as configurações padrão
     await setDoc(settingsRef, defaultSettings);
-    console.log('Configurações padrão criadas com sucesso');
+    debug.log('firestore', 'Configurações padrão criadas com sucesso');
     
     return defaultSettings;
   } catch (error) {
-    console.error('Erro ao buscar configurações:', error);
+    debug.error('firestore', 'Erro ao buscar configurações:', error);
     return null;
   }
 };
@@ -365,7 +366,7 @@ export const updateAppSettings = async (settings: Partial<AppSettings>): Promise
     
     return true;
   } catch (error) {
-    console.error('Erro ao atualizar configurações:', error);
+    debug.error('firestore', 'Erro ao atualizar configurações:', error);
     return false;
   }
 };
@@ -375,23 +376,23 @@ export const updateAppSettings = async (settings: Partial<AppSettings>): Promise
 // Buscar perfil do usuário
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
   try {
-    console.log('Buscando perfil do usuário:', userId);
+    debug.log('firestore', 'Buscando perfil do usuário:', userId);
     const userDoc = await getDoc(doc(db, 'users', userId));
     
     if (userDoc.exists()) {
       const userData = userDoc.data() as UserProfile;
-      console.log('Perfil do usuário encontrado:', userData);
+      debug.log('firestore', 'Perfil do usuário encontrado:', userData);
       
       // Se não tiver a propriedade isAdmin, verificamos se é o primeiro usuário
       if (userData.isAdmin === undefined) {
-        console.log('Verificando se é o primeiro usuário para atribuir status de admin');
+        debug.log('firestore', 'Verificando se é o primeiro usuário para atribuir status de admin');
         const usersCollection = collection(db, 'users');
         const usersQuery = query(usersCollection, limit(2));
         const usersSnapshot = await getDocs(usersQuery);
         
         // Se houver apenas um usuário (este), é o administrador
         if (usersSnapshot.size === 1) {
-          console.log('É o único usuário, atualizando como admin');
+          debug.log('firestore', 'É o único usuário, atualizando como admin');
           const userRef = doc(db, 'users', userId);
           await updateDoc(userRef, {
             isAdmin: true,
@@ -409,10 +410,10 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
       return userData;
     }
     
-    console.log('Perfil do usuário não encontrado');
+    debug.log('firestore', 'Perfil do usuário não encontrado');
     return null;
   } catch (error) {
-    console.error('Erro ao buscar perfil do usuário:', error);
+    debug.error('firestore', 'Erro ao buscar perfil do usuário:', error);
     return null;
   }
 };
@@ -434,7 +435,7 @@ export const getAllUsers = async (): Promise<UserProfile[]> => {
     
     return users;
   } catch (error) {
-    console.error('Erro ao obter usuários:', error);
+    debug.error('firestore', 'Erro ao obter usuários:', error);
     return [];
   }
 };
@@ -451,7 +452,7 @@ export const updateUserProfile = async (userId: string, profileData: Partial<Use
     
     return true;
   } catch (error) {
-    console.error('Erro ao atualizar perfil de usuário:', error);
+    debug.error('firestore', 'Erro ao atualizar perfil de usuário:', error);
     return false;
   }
 };
@@ -480,7 +481,7 @@ export const getPendingUsers = async (): Promise<UserProfile[]> => {
     
     return pendingUsers;
   } catch (error) {
-    console.error('Erro ao obter usuários pendentes:', error);
+    debug.error('firestore', 'Erro ao obter usuários pendentes:', error);
     return [];
   }
 };
@@ -500,7 +501,7 @@ export const approveUser = async (userId: string, adminId: string): Promise<bool
     
     return true;
   } catch (error) {
-    console.error('Erro ao aprovar usuário:', error);
+    debug.error('firestore', 'Erro ao aprovar usuário:', error);
     return false;
   }
 };
@@ -518,7 +519,7 @@ export const rejectUser = async (userId: string): Promise<boolean> => {
     
     return true;
   } catch (error) {
-    console.error('Erro ao rejeitar usuário:', error);
+    debug.error('firestore', 'Erro ao rejeitar usuário:', error);
     return false;
   }
 };
@@ -546,7 +547,7 @@ export const createUserProfile = async (user: User, authProvider: string = 'goog
     
     return true;
   } catch (error) {
-    console.error('Erro ao criar perfil de usuário:', error);
+    debug.error('firestore', 'Erro ao criar perfil de usuário:', error);
     return false;
   }
 };
@@ -651,7 +652,7 @@ export const determineWinner = async (): Promise<WinnerResult | null> => {
       allGuessesWithDifference: rankedGuesses
     };
   } catch (error) {
-    console.error('Erro ao determinar vencedor:', error);
+    debug.error('firestore', 'Erro ao determinar vencedor:', error);
     return null;
   }
 };
