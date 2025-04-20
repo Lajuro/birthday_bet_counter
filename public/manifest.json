@@ -3,7 +3,7 @@
   "short_name": "Contador Chloe",
   "description": "Registre seu palpite para o nascimento da Chloe e acompanhe a contagem regressiva",
   "start_url": "/",
-  "display": "standalone",
+  "display": "",
   "background_color": "#0a0c1b",
   "theme_color": "#6d28d9",
   "icons": [
@@ -14,15 +14,15 @@
       "purpose": "any"
     },
     {
-      "src": "/favicon.ico",
+      "src": "/logo_fill.svg",
       "sizes": "48x48",
-      "type": "image/x-icon"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/apple-icon.png",
-      "sizes": "180x180",
-      "type": "image/png",
-      "purpose": "maskable"
+      "src": "/logo_fill.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ]
 }
