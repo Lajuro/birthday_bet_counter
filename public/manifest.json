@@ -8,18 +8,13 @@
   "theme_color": "#6d28d9",
   "icons": [
     {
-      "src": "/logo_fill.png",
-      "sizes": "512x512",
+      "src": "/logo_fill_192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon.ico",
-      "sizes": "48x48",
-      "type": "image/x-icon"
-    },
-    {
-      "src": "/logo_fill.png",
+      "src": "/logo_fill_512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
