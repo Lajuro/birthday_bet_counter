@@ -1,0 +1,80 @@
+/* Mobile-first responsive improvements for baby born card */
+
+/* Ensure proper spacing on very small screens */
+@media (max-width: 360px) {
+  .baby-born-card {
+    margin: 0.5rem;
+  }
+  
+  .baby-born-counter-grid {
+    gap: 0.25rem !important;
+  }
+  
+  .baby-born-counter-item {
+    padding: 0.5rem !important;
+    border-radius: 0.5rem !important;
+  }
+  
+  .baby-born-counter-item .text-center > div:first-child {
+    font-size: 1rem !important;
+    line-height: 1.2;
+  }
+  
+  .baby-born-counter-item .text-center > div:last-child {
+    font-size: 0.625rem !important;
+    line-height: 1;
+  }
+}
+
+/* Improved mobile touch targets and spacing */
+@media (max-width: 480px) {
+  .baby-born-counter-item {
+    min-height: 4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .baby-born-rainbow {
+    line-height: 1.1;
+    word-break: break-word;
+    hyphens: auto;
+  }
+  
+  /* Better badge wrapping on mobile */
+  .baby-born-badge-animated {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* Smooth scrolling for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .baby-born-card {
+    scroll-behavior: smooth;
+  }
+  
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    .baby-born-counter-seconds,
+    .baby-born-badge-animated,
+    .baby-born-heart {
+      animation: none !important;
+    }
+  }
+}
+
+/* Optimized text scaling for small screens */
+@media (max-width: 320px) {
+  .baby-born-rainbow {
+    font-size: 1.25rem !important;
+  }
+  
+  .baby-born-counter-item .text-center > div:first-child {
+    font-size: 0.875rem !important;
+  }
+  
+  .baby-born-counter-item .text-center > div:last-child {
+    font-size: 0.5rem !important;
+  }
+}

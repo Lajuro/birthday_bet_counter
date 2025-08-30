@@ -126,9 +126,9 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col font-sans">
-      {/* Botão fixo para adicionar palpite */}
-      {allowGuesses && (
+    <main className={`min-h-screen ${babyBorn ? 'bg-gradient-to-br from-pink-50/50 via-purple-50/30 to-indigo-50/50 dark:from-pink-950/20 dark:via-purple-950/10 dark:to-indigo-950/20' : 'bg-gradient-to-b from-slate-950 to-slate-900'} flex flex-col font-sans ${babyBorn ? 'p-2 sm:p-4' : ''}`}>
+      {/* Botão fixo para adicionar palpite - apenas quando bebê não nasceu */}
+      {allowGuesses && !babyBorn && (
         <div className="fixed bottom-6 right-6 z-50 animate-bounce">
           <Button
             onClick={() => setGuessFormOpen(true)}
@@ -140,47 +140,61 @@ export default function Home() {
         </div>
       )}
 
-      <header className="pt-8 md:pt-12 lg:pt-16 pb-6 md:pb-8 px-4 text-center relative overflow-hidden">
-        {/* Efeito decorativo de fundo */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-72 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 rounded-[100%] blur-3xl -z-10 transform -translate-y-1/3"></div>
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mb-2 animate-fade-in">
-          Contador de Palpites
-        </h1>
+      {/* Header modificado - apenas quando bebê não nasceu */}
+      {!babyBorn && (
+        <header className="pt-8 md:pt-12 lg:pt-16 pb-6 md:pb-8 px-4 text-center relative overflow-hidden">
+          {/* Efeito decorativo de fundo */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-72 bg-gradient-to-br from-indigo-600/20 to-purple-600/20 rounded-[100%] blur-3xl -z-10 transform -translate-y-1/3"></div>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 mb-2 animate-fade-in">
+            Contador de Palpites
+          </h1>
 
-        <div className="mt-5 mb-4">
-          <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight inline-block">
-            <span className="bg-gradient-to-r from-indigo-200 to-purple-200 dark:from-indigo-900/50 dark:to-purple-900/50 px-5 py-1.5 rounded-full shadow-sm border border-indigo-300/30 dark:border-indigo-700/30">
-              {appSettings?.babyName || "Bebê"}
-            </span>
-          </h2>
-        </div>
-
-        {/* Divider decorativo */}
-        <div className="flex items-center justify-center my-8">
-          <div className="h-px w-24 md:w-32 bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-700 to-transparent"></div>
-          <div className="mx-3 text-lg text-indigo-400 dark:text-indigo-500">
-            ✦
+          <div className="mt-5 mb-4">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-semibold tracking-tight inline-block">
+              <span className="bg-gradient-to-r from-indigo-200 to-purple-200 dark:from-indigo-900/50 dark:to-purple-900/50 px-5 py-1.5 rounded-full shadow-sm border border-indigo-300/30 dark:border-indigo-700/30">
+                {appSettings?.babyName || "Bebê"}
+              </span>
+            </h2>
           </div>
-          <div className="h-px w-24 md:w-32 bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-700 to-transparent"></div>
-        </div>
 
-        {/* Componente para exibir o valor total do prêmio */}
-        {(closestGuess?.guess || nextGuesses.length > 0) && (
-          <PrizeCard
-            totalGuessCount={totalGuessCount}
-            guessPrice={appSettings?.guessPrice || 10}
-          />
-        )}
-      </header>
+          {/* Divider decorativo */}
+          <div className="flex items-center justify-center my-8">
+            <div className="h-px w-24 md:w-32 bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-700 to-transparent"></div>
+            <div className="mx-3 text-lg text-indigo-400 dark:text-indigo-500">
+              ✦
+            </div>
+            <div className="h-px w-24 md:w-32 bg-gradient-to-r from-transparent via-indigo-300 dark:via-indigo-700 to-transparent"></div>
+          </div>
 
-      <div className="container mx-auto px-4 relative">
+          {/* Componente para exibir o valor total do prêmio */}
+          {(closestGuess?.guess || nextGuesses.length > 0) && (
+            <PrizeCard
+              totalGuessCount={totalGuessCount}
+              guessPrice={appSettings?.guessPrice || 10}
+            />
+          )}
+        </header>
+      )}
+
+      <div className={`${babyBorn ? 'flex-1 flex flex-col justify-center' : 'container mx-auto px-4 relative'}`}>
         {babyBorn ? (
-          // Exibição quando o bebê já nasceu
-          <BabyBornCard
-            settings={appSettings}
-            babyAge={babyAge}
-            winningGuess={closestGuess}
-          />
+          // Experiência especial quando o bebê já nasceu
+          <div className="relative">
+            <BabyBornCard settings={appSettings} babyAge={babyAge} />
+            
+            {/* Overlay com partículas flutuantes */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+              <div className="absolute top-10 left-10 w-2 h-2 bg-pink-400/30 rounded-full animate-pulse"></div>
+              <div className="absolute top-20 right-20 w-1 h-1 bg-purple-400/40 rounded-full animate-pulse delay-100"></div>
+              <div className="absolute bottom-20 left-20 w-1.5 h-1.5 bg-indigo-400/35 rounded-full animate-pulse delay-200"></div>
+              <div className="absolute bottom-32 right-32 w-1 h-1 bg-pink-400/30 rounded-full animate-pulse delay-300"></div>
+              <div className="absolute top-1/3 left-1/4 w-1 h-1 bg-purple-400/25 rounded-full animate-pulse delay-500"></div>
+              <div className="absolute top-2/3 right-1/4 w-1.5 h-1.5 bg-indigo-400/30 rounded-full animate-pulse delay-700"></div>
+            </div>
+
+            {/* Gradient overlay sutil */}
+            <div className="fixed inset-0 bg-gradient-to-t from-pink-50/10 via-transparent to-purple-50/10 dark:from-pink-950/5 dark:via-transparent dark:to-purple-950/5 pointer-events-none z-0"></div>
+          </div>
         ) : (
           // Exibição quando o bebê ainda não nasceu
           <div className="w-full max-w-5xl mx-auto">
@@ -201,6 +215,8 @@ export default function Home() {
                   <ClosestGuessCard
                     closestGuess={closestGuess}
                     countdown={countdowns[closestGuess.guess.id]}
+                    nextGuesses={nextGuesses}
+                    countdowns={countdowns}
                   />
                 </div>
               )}

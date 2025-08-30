@@ -19,6 +19,11 @@ const isSameDay = (date1: Date, date2: Date): boolean => {
   );
 };
 
+// Função auxiliar para verificar se dois palpites são a mesma pessoa
+const isSamePerson = (guess1: BirthGuess, guess2: BirthGuess): boolean => {
+  return guess1.userName.toLowerCase() === guess2.userName.toLowerCase();
+};
+
 // Função auxiliar para formatar data como string YYYY-MM-DD
 const formatDateKey = (date: Date): string => {
   return date.toISOString().split("T")[0];
@@ -43,18 +48,129 @@ export const NextGuessesSection: React.FC<NextGuessesSectionProps> = ({
 }) => {
   if (guesses.length === 0) return null;
 
-  // Se temos um palpite mais próximo, vamos usá-lo para filtrar
-  const closestDate = closestGuess
-    ? new Date(closestGuess.guessDate.seconds * 1000)
-    : null;
+  // Log detalhado do palpite mais próximo recebido
+  debug.log(
+    "app",
+    "Palpite mais próximo recebido:",
+    closestGuess
+      ? {
+          id: closestGuess.id,
+          userName: closestGuess.userName,
+          date: new Date(
+            closestGuess.guessDate.seconds * 1000
+          ).toLocaleDateString(),
+        }
+      : "nenhum"
+  );
 
-  // Primeiro filtramos os palpites para remover os do mesmo dia do palpite mais próximo
-  const filteredGuesses = closestDate
-    ? guesses.filter((guess) => {
-        const guessDate = new Date(guess.guessDate.seconds * 1000);
-        return !isSameDay(guessDate, closestDate);
-      })
-    : guesses;
+  // Filtramos palpites que já passaram da data atual
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0); // Comparar apenas a data (sem horas)
+
+  // Primeiro filtramos palpites com data futura
+  const futureGuesses = guesses.filter((guess) => {
+    const guessDate = new Date(guess.guessDate.seconds * 1000);
+    guessDate.setHours(0, 0, 0, 0); // Comparar apenas a data
+    return guessDate >= currentDate;
+  });
+
+  debug.log(
+    "app",
+    "Palpites futuros:",
+    futureGuesses.map((g) => ({
+      id: g.id,
+      name: g.userName,
+      date: new Date(g.guessDate.seconds * 1000).toLocaleDateString(),
+    }))
+  );
+
+  // Se não temos palpites futuros, não exibimos nada
+  if (futureGuesses.length === 0) {
+    return (
+      <div className="space-y-6 relative">
+        <h2 className="text-center text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-purple-600 dark:from-violet-400 dark:to-purple-400 mb-6">
+          Próximos Palpites
+          <div className="mt-2 mx-auto w-24 h-1 bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"></div>
+        </h2>
+
+        {/* Efeito decorativo para esta seção */}
+        <div className="absolute -inset-10 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 rounded-[40%] blur-3xl -z-10"></div>
+
+        <div className="text-center py-8">
+          <div className="inline-block p-4 rounded-full bg-indigo-100/20 dark:bg-indigo-900/20 mb-4">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-8 w-8 text-indigo-500 dark:text-indigo-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-slate-700 dark:text-slate-300">
+            Não há mais palpites para datas futuras
+          </h3>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto">
+            Todos os palpites são para datas que já passaram.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se temos um palpite mais próximo, precisamos filtrar tanto por DATA quanto por USUÁRIO
+  let filteredGuesses = futureGuesses;
+
+  if (closestGuess) {
+    const closestDate = new Date(closestGuess.guessDate.seconds * 1000);
+
+    // Log da data do palpite mais próximo para diagnóstico
+    debug.log(
+      "app",
+      "Data do palpite mais próximo:",
+      closestDate.toLocaleDateString()
+    );
+
+    // Filtramos pela data e nome da pessoa
+    filteredGuesses = futureGuesses.filter((guess) => {
+      const guessDate = new Date(guess.guessDate.seconds * 1000);
+
+      // Se for o mesmo ID, definitivamente filtramos
+      if (guess.id === closestGuess.id) {
+        return false;
+      }
+
+      // Se for a mesma data, filtramos também
+      if (isSameDay(guessDate, closestDate)) {
+        return false;
+      }
+
+      // Se for a mesma pessoa em qualquer data, também filtramos
+      if (isSamePerson(guess, closestGuess)) {
+        return false;
+      }
+
+      // Se passar por todos os filtros, mantém o palpite
+      return true;
+    });
+  }
+
+  debug.log("app", "Palpite mais próximo:", closestGuess?.id);
+  debug.log(
+    "app",
+    "Palpites após todos os filtros:",
+    filteredGuesses.map((g) => ({
+      id: g.id,
+      userName: g.userName,
+      date: new Date(g.guessDate.seconds * 1000).toLocaleDateString(),
+    }))
+  );
 
   // Se não há palpites após a filtragem, mostramos uma mensagem
   if (filteredGuesses.length === 0) {
@@ -90,15 +206,12 @@ export const NextGuessesSection: React.FC<NextGuessesSectionProps> = ({
           </h3>
           <p className="text-slate-500 dark:text-slate-400 mt-2 max-w-md mx-auto">
             Todos os outros palpites são para a mesma data do palpite mais
-            próximo.
+            próximo ou da mesma pessoa.
           </p>
         </div>
       </div>
     );
   }
-
-  // Adicionar debug para verificar os palpites filtrados
-  debug.log("app", "Palpites filtrados:", filteredGuesses);
 
   // Agora agrupamos os palpites filtrados por dia
   const guessesByDay: { [key: string]: BirthGuess[] } = {};

@@ -3,6 +3,8 @@ import { CountdownData } from "@/hooks/useTimeCalculations";
 import { ClosestGuessResult } from "@/hooks/useBabyData";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { BirthGuess } from "@/types";
+import { debug } from "@/lib/debug";
 
 // Função auxiliar para formatar lista de nomes com vírgulas e "e" para o último
 const formatNameList = (names: string[]): string => {
@@ -19,24 +21,88 @@ const formatNameList = (names: string[]): string => {
 type ClosestGuessCardProps = {
   closestGuess: ClosestGuessResult;
   countdown: CountdownData | undefined;
+  nextGuesses?: BirthGuess[]; // Nova prop para receber os próximos palpites
+  countdowns?: { [key: string]: CountdownData }; // Nova prop para os countdowns dos próximos palpites
 };
 
 export const ClosestGuessCard: React.FC<ClosestGuessCardProps> = ({
   closestGuess,
   countdown,
+  nextGuesses = [],
+  countdowns = {},
 }) => {
-  if (!closestGuess?.guess || !countdown) return null;
+  // Log detalhado do palpite mais próximo e dos próximos palpites
+  debug.log(
+    "app",
+    "Palpite recebido como mais próximo:",
+    closestGuess?.guess
+      ? {
+          id: closestGuess.guess.id,
+          name: closestGuess.guess.userName,
+          date: closestGuess.guess.guessDate
+            ? new Date(
+                closestGuess.guess.guessDate.toDate()
+              ).toLocaleDateString()
+            : "sem data",
+        }
+      : "nulo"
+  );
+
+  debug.log(
+    "app",
+    "Próximos palpites disponíveis:",
+    nextGuesses.map((g) => ({
+      id: g.id,
+      name: g.userName,
+      date: new Date(g.guessDate.seconds * 1000).toLocaleDateString(),
+    }))
+  );
+
+  if (!closestGuess?.guess && nextGuesses.length === 0) return null;
+
+  // Verificamos se o palpite mais próximo é válido
+  const isClosestGuessValid =
+    closestGuess?.guess !== null && countdown !== undefined;
 
   // Convertemos a data do palpite para um objeto Date para comparação
-  const guessDate = closestGuess.guess.guessDate
-    ? new Date(closestGuess.guess.guessDate.toDate())
-    : null;
+  const guessDate =
+    isClosestGuessValid && closestGuess?.guess?.guessDate
+      ? new Date(closestGuess.guess.guessDate.toDate())
+      : null;
 
   // Verificar se a data já passou (comparando com a data atual)
   const currentDate = new Date();
   const dateHasPassed = guessDate ? guessDate < currentDate : false;
 
-  // Se a data do palpite já passou, exibir mensagem adequada ou retornar null
+  // Se a data do palpite mais próximo já passou, E existem próximos palpites,
+  // usamos o primeiro palpite da lista de próximos como o mais próximo
+  if (dateHasPassed && nextGuesses.length > 0) {
+    const nextGuess = nextGuesses[0];
+    const nextGuessCountdown = countdowns[nextGuess.id];
+
+    debug.log("app", "Palpite mais próximo passou, usando próximo:", {
+      id: nextGuess.id,
+      name: nextGuess.userName,
+    });
+
+    // Se temos um próximo palpite válido com countdown, usamos ele
+    if (nextGuess && nextGuessCountdown) {
+      // Preparar os dados para exibição
+      const nextGuessDate = new Date(nextGuess.guessDate.seconds * 1000);
+      const formattedNextDate = format(nextGuessDate, "d 'de' MMMM 'de' yyyy", {
+        locale: ptBR,
+      });
+
+      return renderGuessCard({
+        guess: nextGuess,
+        countdown: nextGuessCountdown,
+        formattedDate: formattedNextDate,
+        sameDayGuesses: [], // Não temos esta informação para os próximos palpites
+      });
+    }
+  }
+
+  // Se a data do palpite já passou e não temos próximos palpites, mostramos a mensagem
   if (dateHasPassed) {
     return (
       <div className="w-full mb-4">
@@ -65,6 +131,45 @@ export const ClosestGuessCard: React.FC<ClosestGuessCardProps> = ({
     );
   }
 
+  // Verificar se temos countdown válido para continuar
+  if (!countdown) return null;
+
+  // Formatar a data usando date-fns no estilo "21 de abril de 2025"
+  const formattedDate = closestGuess.guess?.guessDate
+    ? format(closestGuess.guess.guessDate.toDate(), "d 'de' MMMM 'de' yyyy", {
+        locale: ptBR,
+      })
+    : "";
+
+  return renderGuessCard({
+    guess: closestGuess.guess,
+    countdown,
+    formattedDate,
+    sameDayGuesses: closestGuess.sameDayGuesses,
+  });
+};
+
+// Função auxiliar para renderizar o card do palpite
+const renderGuessCard = ({
+  guess,
+  countdown,
+  formattedDate,
+  sameDayGuesses = [],
+}: {
+  guess: BirthGuess | null;
+  countdown: CountdownData;
+  formattedDate: string;
+  sameDayGuesses?: BirthGuess[];
+}) => {
+  if (!guess || !countdown) return null;
+
+  // Log para debugar qual palpite está sendo renderizado como o mais próximo
+  debug.log("app", "Renderizando palpite como mais próximo:", {
+    id: guess.id,
+    name: guess.userName,
+    date: formattedDate,
+  });
+
   // Formatar número com zero à esquerda
   const padZero = (num: number): string => {
     return num.toString().padStart(2, "0");
@@ -73,22 +178,19 @@ export const ClosestGuessCard: React.FC<ClosestGuessCardProps> = ({
   // Determinar o texto de liderança com base em se há outros palpites para o mesmo dia
   const getLeadershipText = () => {
     // Se não há outros palpites no mesmo dia, retornar apenas o nome do palpite principal
-    if (
-      !closestGuess.sameDayGuesses ||
-      closestGuess.sameDayGuesses.length === 0
-    ) {
+    if (!sameDayGuesses || sameDayGuesses.length === 0) {
       return (
         <p className="text-slate-100 opacity-90">
-          <span className="font-medium">{closestGuess.guess?.userName}</span>{" "}
-          está na liderança com um palpite para:
+          <span className="font-medium">{guess?.userName}</span> está na
+          liderança com um palpite para:
         </p>
       );
     }
 
     // Se há outros palpites no mesmo dia, criar uma lista formatada com todos os nomes
     const allNames = [
-      closestGuess?.guess?.userName,
-      ...closestGuess.sameDayGuesses.map((g) => g.userName),
+      guess?.userName,
+      ...sameDayGuesses.map((g) => g.userName),
     ].filter(Boolean) as string[];
 
     // Usar a função formatNameList para formatar os nomes
@@ -102,13 +204,6 @@ export const ClosestGuessCard: React.FC<ClosestGuessCardProps> = ({
       </p>
     );
   };
-
-  // Formatar a data usando date-fns no estilo "21 de abril de 2025"
-  const formattedDate = closestGuess.guess?.guessDate
-    ? format(closestGuess.guess.guessDate.toDate(), "d 'de' MMMM 'de' yyyy", {
-        locale: ptBR,
-      })
-    : "";
 
   // Determinar quantas colunas serão exibidas (para ajustar o layout dinamicamente)
   const showWeeks = countdown.weeks > 0;
@@ -223,12 +318,6 @@ export const ClosestGuessCard: React.FC<ClosestGuessCardProps> = ({
                 ></div>
               </div>
             </div>
-
-            {closestGuess.difference && (
-              <p className="text-xs text-amber-500/80 mt-3">
-                {closestGuess.difference}
-              </p>
-            )}
           </div>
         </div>
 

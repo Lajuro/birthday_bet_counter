@@ -1,0 +1,186 @@
+/* Animações melhoradas para o componente BabyBornCard */
+
+@keyframes pulse-gentle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(236, 72, 153, 0.7);
+  }
+}
+
+@keyframes count-update {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+    color: rgba(236, 72, 153, 0.8);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+}
+
+@keyframes rainbow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes particle-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.3;
+  }
+  33% {
+    transform: translateY(-20px) rotate(120deg);
+    opacity: 0.8;
+  }
+  66% {
+    transform: translateY(10px) rotate(240deg);
+    opacity: 0.5;
+  }
+}
+
+/* Classes principais */
+.baby-born-card {
+  animation: float 6s ease-in-out infinite, fadeInUp 1s ease-out;
+}
+
+.baby-born-heart {
+  animation: pulse-gentle 2s ease-in-out infinite;
+}
+
+.baby-born-counter-seconds {
+  animation: count-update 1s ease-in-out;
+}
+
+.baby-born-glow {
+  animation: glow 4s ease-in-out infinite;
+}
+
+.baby-born-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+.baby-born-badge-animated {
+  background-size: 200% 200%;
+  animation: shimmer 3s ease infinite;
+}
+
+.baby-born-sparkle {
+  animation: sparkle 3s ease-in-out infinite;
+}
+
+.baby-born-rainbow {
+  background: linear-gradient(-45deg, #ec4899, #a855f7, #6366f1, #3b82f6, #10b981, #f59e0b);
+  background-size: 400% 400%;
+  animation: rainbow 8s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.baby-born-particle {
+  animation: particle-float 8s ease-in-out infinite;
+}
+
+/* Responsividade específica */
+@media (max-width: 640px) {
+  .baby-born-counter-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .baby-born-counter-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+}
+
+/* Efeitos de hover */
+.baby-born-counter-item:hover {
+  transform: translateY(-3px) scale(1.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Animação escalonada para contadores */
+.baby-born-counter-item:nth-child(1) { animation-delay: 0.1s; }
+.baby-born-counter-item:nth-child(2) { animation-delay: 0.2s; }
+.baby-born-counter-item:nth-child(3) { animation-delay: 0.3s; }
+.baby-born-counter-item:nth-child(4) { animation-delay: 0.4s; }
+.baby-born-counter-item:nth-child(5) { animation-delay: 0.5s; }
+.baby-born-counter-item:nth-child(6) { animation-delay: 0.6s; }
+
+.baby-born-counter-item {
+  animation: fadeInUp 0.8s ease-out both;
+}
+
+/* Partículas flutuantes */
+.baby-born-particle:nth-child(1) { animation-delay: 0s; }
+.baby-born-particle:nth-child(2) { animation-delay: 1.5s; }
+.baby-born-particle:nth-child(3) { animation-delay: 3s; }
+.baby-born-particle:nth-child(4) { animation-delay: 4.5s; }
+.baby-born-particle:nth-child(5) { animation-delay: 6s; }
+.baby-born-particle:nth-child(6) { animation-delay: 7.5s; }

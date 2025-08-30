@@ -409,6 +409,11 @@ export const getNextGuesses = async (
     }
 
     const closestDate = new Date(closestGuess.guessDate.seconds * 1000);
+    // Resetar horas, minutos e segundos para comparar apenas datas
+    const closestDateOnly = new Date(closestDate);
+    closestDateOnly.setHours(0, 0, 0, 0);
+
+    const closestUserName = closestGuess.userName.toLowerCase(); // Para comparação case-insensitive
 
     // Ordenar palpites por data (crescente)
     const sortedGuesses = guesses
@@ -419,10 +424,36 @@ export const getNextGuesses = async (
         return dateA.getTime() - dateB.getTime(); // Ordenação crescente
       });
 
-    // Filtrar apenas palpites com data MAIOR que a data do palpite mais próximo
+    // Filtrar palpites para remover:
+    // 1. O palpite mais próximo (pelo ID)
+    // 2. TODOS os palpites com a mesma data que o mais próximo (não apenas o líder)
+    // 3. Palpites da mesma pessoa que fez o palpite mais próximo
     const filteredGuesses = sortedGuesses.filter((guess) => {
+      // Remover pelo ID (mesmo palpite)
+      if (guess.id === closestGuess.id) {
+        return false;
+      }
+
+      // Comparar nomes de usuário (case-insensitive)
+      const guessUserName = guess.userName.toLowerCase();
+      if (guessUserName === closestUserName) {
+        return false; // Mesmo usuário, remover
+      }
+
+      // Verificar se a data é diferente
       const guessDate = new Date(guess.guessDate.seconds * 1000);
-      return guessDate.getTime() > closestDate.getTime();
+
+      // Para comparar apenas as datas (sem considerar horas)
+      const guessDateOnly = new Date(guessDate);
+      guessDateOnly.setHours(0, 0, 0, 0);
+
+      // Se for o mesmo dia do palpite mais próximo, remover
+      if (guessDateOnly.getTime() === closestDateOnly.getTime()) {
+        return false;
+      }
+
+      // Verificar se as datas são futuras
+      return guessDateOnly.getTime() > closestDateOnly.getTime();
     });
 
     // Função auxiliar para formatar data como string YYYY-MM-DD

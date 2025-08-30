@@ -1,0 +1,73 @@
+/* Mobile menu improvements */
+.mobile-menu-backdrop {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.mobile-menu-content {
+  animation: slideInFromTop 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Prevent body scroll when mobile menu is open */
+body.mobile-menu-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Improved touch targets for mobile */
+@media (max-width: 768px) {
+  .mobile-menu-item {
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
+  
+  /* Ensure proper spacing for touch interfaces */
+  .mobile-menu-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Smooth transitions for menu state changes */
+.navbar-transition {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Better focus states for accessibility */
+.mobile-menu-item:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.5);
+  outline-offset: 2px;
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu-backdrop,
+  .mobile-menu-content {
+    animation: none;
+  }
+  
+  .navbar-transition {
+    transition: none;
+  }
+}

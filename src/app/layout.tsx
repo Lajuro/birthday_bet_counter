@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./custom-scrollbar.css"; 
+import "./mobile-responsive.css";
+import "./mobile-menu.css";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/auth-context";
 import { Navbar } from "@/components/navbar";
